@@ -1,0 +1,15 @@
+{
+  "action": "destroyed",
+  "reason": "invalidated",
+  "merge_group": {
+    "head_sha": "def456",
+    "head_ref": "refs/heads/gh-readonly-queue/main/pr-42-abc123abc123",
+    "base_ref": "refs/heads/main"
+  },
+  "repository": {
+    "full_name": "o/r",
+    "html_url": "https://github.com/o/r",
+    "default_branch": "main"
+  },
+  "sender": { "login": "alice", "type": "User" }
+}

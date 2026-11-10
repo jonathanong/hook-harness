@@ -1,0 +1,20 @@
+{
+  "action": "submitted",
+  "review": {
+    "body": "SECRET BODY",
+    "html_url": "https://github.com/o/r/pull/42#pullrequestreview-1",
+    "author_association": "COLLABORATOR"
+  },
+  "pull_request": {
+    "number": 42,
+    "title": "SECRET TITLE",
+    "head": { "sha": "abc123", "ref": "feature" },
+    "base": { "ref": "main" }
+  },
+  "repository": {
+    "full_name": "o/r",
+    "html_url": "https://github.com/o/r",
+    "default_branch": "main"
+  },
+  "sender": { "login": "bob", "type": "User" }
+}

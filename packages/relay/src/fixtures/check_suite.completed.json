@@ -1,0 +1,15 @@
+{
+  "action": "completed",
+  "check_suite": {
+    "head_sha": "abc123",
+    "head_branch": "feature",
+    "conclusion": "failure",
+    "pull_requests": [{ "number": 42 }, { "number": 43 }]
+  },
+  "repository": {
+    "full_name": "o/r",
+    "html_url": "https://github.com/o/r",
+    "default_branch": "main"
+  },
+  "sender": { "login": "github-actions[bot]", "type": "Bot" }
+}

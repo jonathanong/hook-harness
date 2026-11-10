@@ -1,0 +1,20 @@
+{
+  "action": "completed",
+  "workflow_run": {
+    "id": 9001,
+    "name": "CI",
+    "workflow_id": 77,
+    "conclusion": "failure",
+    "head_branch": "main",
+    "head_sha": "abc123",
+    "html_url": "https://github.com/o/r/actions/runs/9001",
+    "display_title": "SECRET TITLE",
+    "pull_requests": []
+  },
+  "repository": {
+    "full_name": "o/r",
+    "html_url": "https://github.com/o/r",
+    "default_branch": "main"
+  },
+  "sender": { "login": "alice", "type": "User" }
+}
