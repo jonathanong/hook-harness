@@ -38,8 +38,8 @@ Set all of these to **Read-only**. Leave everything else as **No access**.
 | Actions         | `workflow_run`                                                                                                                 |
 | Checks          | `check_suite`                                                                                                                  |
 | Commit statuses | `status`                                                                                                                       |
-| Contents        | `push`                                                                                                                         |
-| Issues          | `issue_comment` on issues                                                                                                      |
+| Contents        | `push`, `commit_comment`                                                                                                       |
+| Issues          | `issues`, `issue_comment` on issues                                                                                            |
 | Merge queues    | `merge_group`                                                                                                                  |
 | Metadata        | mandatory; GitHub selects it automatically                                                                                     |
 | Pull requests   | `pull_request`, `pull_request_review`, `pull_request_review_comment`, `pull_request_review_thread`, and `issue_comment` on PRs |
@@ -51,7 +51,9 @@ Leave all organization and account permissions at **No access**.
 An event checkbox only appears once you grant the matching permission above.
 
 - Check suite
+- Commit comment
 - Issue comment
+- Issues
 - Merge group
 - Pull request
 - Pull request review

@@ -1,0 +1,17 @@
+{
+  "action": "created",
+  "comment": {
+    "id": 777,
+    "commit_id": "abc123",
+    "body": "/fix this broke the build",
+    "html_url": "https://github.com/o/r/commit/abc123#commitcomment-777",
+    "author_association": "OWNER",
+    "user": { "login": "gina", "type": "User" }
+  },
+  "repository": {
+    "full_name": "o/r",
+    "html_url": "https://github.com/o/r",
+    "default_branch": "main"
+  },
+  "sender": { "login": "gina", "type": "User" }
+}

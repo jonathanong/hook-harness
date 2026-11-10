@@ -65,7 +65,7 @@ All comments are stored with no command allowlist; `command` is parsed from the 
 
 The payload is stored gzipped alongside the envelope, minus `installation` (always) and the keys in `PayloadDrop` (default `repository,organization`). Payloads over `PayloadMaxBytes` (default 1 MB of JSON) or 350 KB gzipped are left out with `payloadOmitted: "too_large"`. `GET /events?payload=0` skips them, and a page stops filling at 5 MB to stay under the 6 MB response cap. Attacker-influenced strings (`headRef`, `workflow`, `sender.login`) are labelled as external data in prompts.
 
-Stored events: `pull_request` (lifecycle incl. `enqueued`/`dequeued`), review events, `issue_comment` (all comments: created, edited, deleted), `pull_request_review_comment`, `check_suite.completed`, `workflow_run.completed`, `status`, `merge_group`, default-branch `push`.
+Stored events: `pull_request` (lifecycle incl. `enqueued`/`dequeued`), review events, `issue_comment` (all comments: created, edited, deleted), `issues` (all actions), `commit_comment`, `pull_request_review_comment`, `check_suite.completed`, `workflow_run.completed`, `status`, `merge_group`, default-branch `push`.
 
 ## Runner (local, one host)
 

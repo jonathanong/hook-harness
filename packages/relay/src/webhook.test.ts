@@ -87,7 +87,7 @@ describe("POST /webhook", () => {
   });
 
   it("drops events outside the allowlist and uninteresting actions", async () => {
-    expect((await route(webhookEvent("issues", {}), deps)).statusCode).toBe(202);
+    expect((await route(webhookEvent("fork", {}), deps)).statusCode).toBe(202);
     const labeled = fixture("pull_request.dequeued", (p) => (p.action = "labeled"));
     expect((await route(webhookEvent("pull_request", labeled), deps)).statusCode).toBe(202);
     expect(ddb.commandCalls(PutCommand)).toHaveLength(0);

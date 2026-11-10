@@ -122,7 +122,9 @@ describe("normalizers", () => {
   it("is a static allowlist", () => {
     expect([...normalizers.keys()].sort()).toEqual([
       "check_suite",
+      "commit_comment",
       "issue_comment",
+      "issues",
       "merge_group",
       "pull_request",
       "pull_request_review",
