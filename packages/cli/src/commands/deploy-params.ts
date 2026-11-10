@@ -8,7 +8,6 @@ export const PARAM_FLAGS: Record<string, string> = {
   "billing-mode": "BillingMode",
   "read-capacity": "ReadCapacity",
   "write-capacity": "WriteCapacity",
-  commands: "Commands",
   "payload-drop": "PayloadDrop",
   "payload-max-bytes": "PayloadMaxBytes",
 };

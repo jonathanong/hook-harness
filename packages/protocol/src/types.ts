@@ -24,10 +24,14 @@ export interface Envelope {
   workflow: string | null;
   workflowId: number | null;
   runId: number | null;
-  /** Allowlisted slash command from a comment, e.g. `/plan`. Never the comment text. */
+  /** Lowercased first token of a comment or review body when it is a slash command, e.g. `/plan`. */
   command: string | null;
   commentId: number | null;
+  /** Who triggered the delivery. */
   sender: { login: string; type: string } | null;
+  /** Author of the comment or review; differs from `sender` when someone else edits or deletes it. */
+  author?: { login: string; type: string } | null;
+  /** The author's relationship to the repo: OWNER, MEMBER, COLLABORATOR, CONTRIBUTOR, ... */
   authorAssociation: string | null;
   url: string | null;
   /** Webhook payload with dropped keys removed. Untrusted text: titles, bodies, comments. */

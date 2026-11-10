@@ -7,10 +7,6 @@ Parameters:
     NoEcho: true
     MinLength: 1
     Description: Secret configured on the webhook sender, used to verify X-Hub-Signature-256.
-  Commands:
-    Type: String
-    Default: /plan,/fix,/shepherd
-    Description: Comma-separated slash commands whose comments are stored.
   PayloadDrop:
     Type: String
     Default: repository,organization
@@ -112,7 +108,6 @@ Resources:
         Variables:
           TABLE_NAME: !Ref Table
           WEBHOOK_SECRET: !Ref WebhookSecret
-          COMMANDS: !Ref Commands
           PAYLOAD_DROP: !Ref PayloadDrop
           PAYLOAD_MAX_BYTES: !Ref PayloadMaxBytes
       # Placeholder only: the CLI uploads the real bundle with UpdateFunctionCode after every stack update.

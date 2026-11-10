@@ -26,7 +26,6 @@ describe("template.yaml", () => {
     expect(Object.keys(p).sort()).toEqual(
       [
         "BillingMode",
-        "Commands",
         "PayloadDrop",
         "PayloadMaxBytes",
         "ReadCapacity",
@@ -35,7 +34,6 @@ describe("template.yaml", () => {
       ].sort(),
     );
     expect(p.WebhookSecret.NoEcho).toBe(true);
-    expect(p.Commands.Default).toBe("/plan,/fix,/shepherd");
     expect([p.PayloadDrop.Default, p.PayloadMaxBytes.Default]).toEqual([
       "repository,organization",
       1000000,
@@ -79,7 +77,6 @@ describe("template.yaml", () => {
     });
     expect(f.Code.ZipFile).toContain("503");
     expect(Object.keys(f.Environment.Variables).sort()).toEqual([
-      "COMMANDS",
       "PAYLOAD_DROP",
       "PAYLOAD_MAX_BYTES",
       "TABLE_NAME",

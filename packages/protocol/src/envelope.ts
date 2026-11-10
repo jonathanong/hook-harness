@@ -20,6 +20,7 @@ export function emptyEnvelope(
     command: null,
     commentId: null,
     sender: null,
+    author: null,
     authorAssociation: null,
     url: null,
     ...fields,

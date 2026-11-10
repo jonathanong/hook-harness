@@ -4,18 +4,27 @@
     "number": 7,
     "title": "SECRET TITLE",
     "body": "SECRET BODY",
-    "pull_request": { "url": "https://api.github.com/repos/o/r/pulls/7" }
+    "pull_request": {
+      "url": "https://api.github.com/repos/o/r/pulls/7"
+    }
   },
   "comment": {
     "id": 555,
     "body": "  /Plan please do SECRET BODY",
     "html_url": "https://github.com/o/r/pull/7#issuecomment-555",
-    "author_association": "MEMBER"
+    "author_association": "MEMBER",
+    "user": {
+      "login": "erin",
+      "type": "User"
+    }
   },
   "repository": {
     "full_name": "o/r",
     "html_url": "https://github.com/o/r",
     "default_branch": "main"
   },
-  "sender": { "login": "erin", "type": "User" }
+  "sender": {
+    "login": "erin",
+    "type": "User"
+  }
 }

@@ -29,7 +29,6 @@ export async function handleWebhook(event: UrlEvent, deps: Deps): Promise<UrlRes
   const envelope = normalize(payload, {
     id,
     receivedAt: new Date(receivedMs).toISOString(),
-    commands: deps.commands,
   });
   if (!envelope) return status(202);
 

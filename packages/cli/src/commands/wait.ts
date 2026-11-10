@@ -3,7 +3,7 @@ import type { Envelope } from "@hook-harness/protocol";
 import { COMMON_HELP, parse } from "../args.ts";
 import type { Command, Ctx } from "../types.ts";
 import { advance, encodeCursor, type Cursor } from "../watch/cursor.ts";
-import { WATCH_FLAGS, WATCH_SPEC } from "../watch/flags.ts";
+import { LOGIN_HELP, WATCH_FLAGS, WATCH_SPEC } from "../watch/flags.ts";
 import { matchesAny, openSession, type Session } from "../watch/session.ts";
 
 const HELP = `hook-harness wait --owner <owner> [flags]
@@ -20,7 +20,9 @@ Pass the printed "cursor" back as --after on your next wait to resume exactly th
 ${WATCH_FLAGS}
   --timeout <d>            Give up after this long with no match (default 30m)
 
-${COMMON_HELP}`;
+${COMMON_HELP}
+
+${LOGIN_HELP}`;
 
 function report(
   ctx: Ctx,
