@@ -44,7 +44,7 @@ The MCP server runs `npx -y hook-harness mcp`. Log in once with `hook-harness lo
 | Preset                                               | Matches                                                                             |
 | ---------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | `ejection`                                           | Merge-queue ejection (`pull_request` `dequeued` with a failure reason, not `MERGE`) |
-| `main-failure`                                       | Failed `workflow_run` on `main`                                                     |
+| `main-failure`                                       | Failed `workflow_run` or `check_suite` on `main` (whichever the App subscribes to)  |
 | `dependabot-pr`                                      | Dependabot opened or reopened a PR                                                  |
 | `review-requested`, `review-requested:<login\|team>` | A review was requested (from that reviewer)                                         |
 | `label:<name>`                                       | That label was added to an issue or PR                                              |
