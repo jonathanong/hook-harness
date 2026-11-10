@@ -12,7 +12,8 @@
     "@aws-sdk/client-cloudformation": "3.1165.0",
     "@aws-sdk/client-dynamodb": "3.1165.0",
     "@aws-sdk/client-lambda": "3.1165.0",
-    "@aws-sdk/lib-dynamodb": "3.1165.0"
+    "@aws-sdk/lib-dynamodb": "3.1165.0",
+    "@hook-harness/protocol": "workspace:*"
   },
   "devDependencies": {
     "aws-sdk-client-mock": "4.1.0"

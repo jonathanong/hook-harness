@@ -1,12 +1,14 @@
 import { COMMON_HELP, parse, str, UsageError, type Values } from "../args.ts";
 import { markRevoked, putToken, scanTokens, sha256Hex, type TokenItem } from "../aws/tokens.ts";
 import type { Command, Ctx } from "../types.ts";
-import { connect, requireOutputs } from "./common.ts";
+import { writeClient } from "../client.ts";
+import { connect, requireOutputs, withSlash } from "./common.ts";
 
 const HELP = `hook-harness token <create|list|revoke> [flags]
 
   token create --repos a/b,c/d [--expires 90d] [--label x]
-      Prints a new token once. --repos takes owner/name entries or *.
+      Prints a new token once. --repos takes owner/name, owner/*, or * entries.
+      --login also saves the function URL and token as the client login.
       --expires takes <n>d, <n>h or <n>m (default 90d).
   token list
       Shows hash prefix, label, repos, expiry and revoked state.
@@ -31,8 +33,8 @@ export function parseRepos(value: string | undefined): string[] {
     .map((repo) => repo.trim())
     .filter(Boolean);
   if (repos.length === 0) throw new UsageError("--repos is required (owner/name,... or *)");
-  const bad = repos.find((repo) => repo !== "*" && !/^[\w.-]+\/[\w.-]+$/.test(repo));
-  if (bad) throw new UsageError(`invalid repo "${bad}"; expected owner/name or *`);
+  const bad = repos.find((repo) => repo !== "*" && !/^[\w.-]+\/([\w.-]+|\*)$/.test(repo));
+  if (bad) throw new UsageError(`invalid repo "${bad}"; expected owner/name, owner/*, or *`);
   return repos.includes("*") ? ["*"] : repos;
 }
 
@@ -55,6 +57,10 @@ async function create(values: Values, ctx: Ctx): Promise<number> {
   });
   ctx.out(`Token id: ${hash.slice(0, 8)}`);
   ctx.out(`Token (shown once): ${token}`);
+  if (values.login) {
+    const path = await writeClient(ctx.env, { url: withSlash(outputs.FunctionUrl!), token });
+    ctx.out(`Saved login to ${path}`);
+  }
   return 0;
 }
 
@@ -105,6 +111,7 @@ export const token: Command = async (args, ctx) => {
     repos: { type: "string" },
     expires: { type: "string" },
     label: { type: "string" },
+    login: { type: "boolean" },
   });
   const [sub, arg] = positionals;
   if (values.help) {

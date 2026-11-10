@@ -9,6 +9,10 @@ export interface Ctx {
   fetch: typeof fetch;
   randomBytes(size: number): Buffer;
   now(): Date;
+  /** Resolves after `ms`, or early when `signal` aborts. */
+  sleep(ms: number, signal: AbortSignal): Promise<void>;
+  /** Aborted on SIGINT; stops `tail` and long polls. */
+  signal: AbortSignal;
   /** Upper bound for each CloudFormation / Lambda waiter. */
   maxWaitSeconds: number;
   paths: { template: string; bundle: string };

@@ -1,8 +1,11 @@
 import { UsageError } from "./args.ts";
 import { deploy, update } from "./commands/deploy.ts";
+import { login } from "./commands/login.ts";
 import { status } from "./commands/status.ts";
+import { tail } from "./commands/tail.ts";
 import { teardown } from "./commands/teardown.ts";
 import { token } from "./commands/token.ts";
+import { wait } from "./commands/wait.ts";
 import type { Command, Ctx } from "./types.ts";
 
 /** Command table keyed by name. The runner package adds `run` and `service` through `extra`. */
@@ -12,6 +15,9 @@ export const builtinCommands: Record<string, Command> = {
   teardown,
   status,
   token,
+  login,
+  wait,
+  tail,
 };
 
 export const USAGE = `hook-harness <command> [flags]
@@ -22,6 +28,9 @@ Commands:
   teardown    Delete the stack (requires --yes)
   status      Show stack, function, and a liveness check
   token       create | list | revoke relay tokens
+  login       Save the relay URL and token for wait/tail
+  wait        Block until matching events arrive, print one JSON object (primary interface)
+  tail        Stream matching events as NDJSON (primary interface)
 
 Run \`hook-harness <command> --help\` for flags.`;
 

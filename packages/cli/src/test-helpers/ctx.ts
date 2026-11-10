@@ -25,6 +25,9 @@ export interface Harness {
   err: string[];
   dir: string;
   fetched: string[];
+  /** Virtual clock in ms; `sleep` advances it. */
+  clock: { ms: number };
+  abort(): void;
 }
 
 /** A Ctx writing into a temp dir with a template and bundle fixture. */
@@ -37,6 +40,8 @@ export async function harness(over: Partial<Ctx> = {}): Promise<Harness> {
   const err: string[] = [];
   const fetched: string[] = [];
   const env = { HOOK_HARNESS_CONFIG_DIR: join(dir, "config") };
+  const clock = { ms: Date.parse("2026-11-09T00:00:00.000Z") };
+  const controller = new AbortController();
   const ctx: Ctx = {
     out: (line) => out.push(line),
     err: (line) => err.push(line),
@@ -47,12 +52,16 @@ export async function harness(over: Partial<Ctx> = {}): Promise<Harness> {
       return new Response("", { status: 401 });
     },
     randomBytes: (size) => Buffer.alloc(size, 1),
-    now: () => new Date("2026-11-09T00:00:00.000Z"),
+    now: () => new Date(clock.ms),
+    sleep: async (ms) => {
+      clock.ms += ms;
+    },
+    signal: controller.signal,
     maxWaitSeconds: 60,
     paths: { template: join(dir, "template.yaml"), bundle: join(dir, "dist", "index.mjs") },
     ...over,
   };
-  return { ctx, out, err, dir, fetched };
+  return { ctx, out, err, dir, fetched, clock, abort: () => controller.abort() };
 }
 
 export const OUTPUTS = [
