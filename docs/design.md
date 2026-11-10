@@ -4,36 +4,71 @@ Repo: `jonathanong/hook-harness`.
 
 ## Context
 
-Replaces auto-harness for Vouchington. Auto-harness is a ~100k-line serverless control plane (API Gateway REST + WS, Lambda, DynamoDB, S3, EventBridge, web UI, multi-host assignment) plus a ~20k-line host daemon. Vouchington reaches it through 7 workflows whose only job is to filter events and dispatch; on 2026-11-05 they ran ~3,150 times and 96–100% were skipped.
+hook-harness replaces auto-harness for Vouchington.
 
-hook-harness:
+Auto-harness had two parts:
+
+- A control plane of about 100k lines: API Gateway (REST and WebSockets), Lambda, DynamoDB, S3, EventBridge, a web UI, and assignment of work across hosts.
+- A host daemon of about 20k lines.
+
+Vouchington reached it through 7 workflows whose only job was to filter events and dispatch them. On 2026-11-05 those workflows ran about 3,150 times, and 96–100% of the runs were skipped.
+
+hook-harness is a relay plus a CLI. GitHub events land in a short-lived store, and the agents that act on them read from it directly:
 
 ```text
 GitHub App webhook -> Lambda (function URL) -> DynamoDB (1-day TTL)
                                   ^
-local runner (one host) -- polls GET /events --> matches rules -> renders prompt -> runs CLI in a worktree
+agent (e.g. /triage-loop) -- hook-harness wait / tail / mcp / serve -- polls GET /events
 ```
 
-Decisions (user-confirmed unless marked):
+There is no runner. The agent that consumes events decides what to do with them, owns its cursor, and runs its own work.
 
-- AWS: Lambda function URL + one DynamoDB table + CloudFormation. Built-in TTL was the deciding factor.
-- Store-and-poll, no SSE/WebSockets. Each request is a short Lambda → DynamoDB call.
+Decisions:
+
+- AWS: a Lambda function URL, one DynamoDB table, and CloudFormation. Built-in TTL was the deciding factor.
+- Store-and-poll; the relay holds no long-lived connections. Each request is a short Lambda → DynamoDB call. A local `serve` daemon can fan one poller out to many clients over SSE.
 - 1-day retention.
-- Replaces auto-harness, reusing its host-side code.
-- Assumed (recommended, not yet confirmed): single host; no web UI or Slack (local logs + session-link comment); auto-harness retired after migration.
+- Store everything the GitHub App sends. The App's event subscriptions are the only filter, and consumers filter the rest.
 
 ## Relay (Lambda)
 
-- `POST /webhook`: HMAC over raw bytes (decode base64 bodies; `timingSafeEqual`), normalize (generic fallback for unknown events), `PutItem` with `expiresAt = now + 1 day`.
-- `GET /events?repo=&after=`: bearer token (SHA-256 hash in table, repo scope, expiry, revoked). Key condition `SK > max(after − 60s, now − 1 day)`; client dedupes by delivery ID.
-- Table: events `PK=repo#owner/name`, `SK=<receivedAt ms>#<delivery id>`; tokens `PK=token#<hash>`. Provisioned 25/25 default (always-free), on-demand by parameter.
-- Logs: 1-day retention, system log level `WARN`.
-- Limits: 6 MB request cap (GitHub allows 25 MB, no retry on 413); GitHub doesn't retry failures.
-- App permissions read-only; private key discarded by the relay. The runner may hold its own App credentials (reuse `github-app.ts`) for session tokens.
+**`POST /webhook`**
+
+- Verifies the HMAC over the raw bytes (base64 bodies are decoded first) with `timingSafeEqual`.
+- Normalizes the event, with a generic fallback for event types that have no dedicated normalizer.
+- Writes it with `PutItem` and `expiresAt = now + 1 day`.
+- A manual redelivery gets a new sort key and is replayed on purpose.
+
+**`GET /events?owner=&repos=&after=&limit=&payload=`**
+
+- Requires a bearer token. The table stores its SHA-256 hash, repo scope, expiry and a revoked flag.
+- The key condition is `SK > max(after − 60s, now − 1 day)`. The client dedupes by delivery ID.
+- `after` is either the previous cursor or a bare epoch-ms start time.
+- Returns `{events, cursor, gap}`. `gap` is true when `after` is older than the retention window.
+
+**Table**
+
+- Event items: `PK=owner#<owner>`, `SK=<receivedAt ms>#<delivery id>`.
+- Token items: `PK=token#<sha256>`, `SK=token`.
+- Billing is provisioned 25/25 by default (always free) or on-demand by parameter. Org-wide installs with payloads should use on-demand.
+
+**Logs:** 1-day retention, system log level `WARN`. Payloads are never logged.
+
+**Limits**
+
+- Requests are capped at 6 MB. GitHub allows 25 MB and doesn't retry a 413.
+- Responses are capped at 6 MB, so a page stops filling at 5 MB.
+- GitHub never retries failed deliveries on its own.
+
+**GitHub App:** read-only permissions and no private key; the relay never calls the GitHub API. Setup is in [github-app.md](github-app.md).
+
+### Tokens
+
+`hook-harness token create|list|revoke` writes token items directly with the caller's AWS credentials. The relay has no endpoint for minting tokens, and its role can only `GetItem`/`PutItem`/`Query`. Tokens are read-only, prefixed `hh_`, and scoped to `owner/name`, `owner/*` or `*`.
 
 ### Envelope
 
-A small envelope for filtering, plus the webhook payload:
+Each event has a small envelope for filtering, plus the webhook payload:
 
 ```jsonc
 {
@@ -42,7 +77,8 @@ A small envelope for filtering, plus the webhook payload:
   "receivedAt": "...",
   "event": "pull_request",
   "action": "dequeued",
-  "repo": "owner/name",
+  "owner": "owner",
+  "repo": "owner/name", // null for owner-level events
   "prs": [42],
   "issue": null,
   "headSha": "...",
@@ -52,73 +88,102 @@ A small envelope for filtering, plus the webhook payload:
   "conclusion": null,
   "workflow": null,
   "workflowId": null,
+  "runId": null,
   "command": null, // lowercased first token of a comment/review body if it looks like /plan
   "commentId": null,
   "sender": { "login": "...", "type": "User" }, // who triggered the delivery
-  "author": { "login": "...", "type": "User" }, // comment/review author; can differ from sender
+  "author": { "login": "...", "type": "User" }, // issue/comment/review author; can differ from sender
   "authorAssociation": "MEMBER",
   "url": "...",
+  "payload": {}, // webhook body minus dropped keys; untrusted text
 }
 ```
 
-All comments are stored with no command allowlist; `command` is parsed from the first token (matching `^/[a-z0-9][a-z0-9_-]*$`, null otherwise and for deleted comments) and agents or rules filter on it (`/plan`, `/fix`, `/shepherd`, ...). Provenance: `authorAssociation` is the author's relationship to the repo and `author` is the comment author. GitHub reports organization members with private membership as `CONTRIBUTOR` or `NONE` in webhooks, so use `--min-association` carefully or verify membership via the API.
+**Which events are stored:** every event and action the GitHub App subscribes to.
 
-The payload is stored gzipped alongside the envelope, minus `installation` (always) and the keys in `PayloadDrop` (default `repository,organization`). Payloads over `PayloadMaxBytes` (default 1 MB of JSON) or 350 KB gzipped are left out with `payloadOmitted: "too_large"`. `GET /events?payload=0` skips them, and a page stops filling at 5 MB to stay under the 6 MB response cap. Attacker-influenced strings (`headRef`, `workflow`, `sender.login`) are labelled as external data in prompts.
+- Events with dedicated normalizers get extra envelope fields: `pull_request`, review events, `issue_comment`, `issues`, `commit_comment`, `check_suite`, `workflow_run`, `status`, `merge_group`, and `push` on any ref.
+- Any other event gets `event`, `action`, `owner`, `repo` and `sender`, and the details stay in `payload`.
+- Events are partitioned by `owner`: the repo owner, else the organization, else the installation account.
+- Owner-level events (no repository):
+  - have `repo: null`;
+  - are readable only with `owner/*` or `*` tokens;
+  - are excluded by `--repo`.
+- Events with no owner at all, such as `security_advisory`, are dropped.
 
-Stored events: every event and action the GitHub App subscribes to; the App's event list is the only filter. Events with dedicated normalizers (`pull_request`, review events, `issue_comment`, `issues`, `commit_comment`, `check_suite`, `workflow_run`, `status`, `merge_group`, `push` on any ref) get extra envelope fields; any other event gets `event`, `action`, `owner`, `repo` and `sender`, with details in `payload`. Events are partitioned by `owner` (repo owner, else organization, else installation account). Owner-level events (no repository) have `repo: null`, are readable only with `owner/*` or `*` tokens, and are excluded by `--repo`. Events with no owner at all (e.g. `security_advisory`) are dropped.
+**Comments:** every comment is stored.
 
-## Runner (local, one host)
+- `command` comes from the first token if it matches `^/[a-z0-9][a-z0-9_-]*$`. It's null otherwise and for deleted comments.
+- Consumers filter on it (`/plan`, `/fix`, `/shepherd`, …).
+- For provenance, `authorAssociation` is the author's relationship to the repo, and `author` is the comment author.
+- GitHub reports org members with private membership as `CONTRIBUTOR` or `NONE` in webhooks. Verify membership through the API before trusting it for privileged actions.
 
-- Poll loop (default 15s) per configured repo; cursor + dedupe in local SQLite.
-- Rules file (YAML): match on envelope fields → `template`, `vars`, `command` (catalog entry), `concurrencyKey` (template string), `priority`, `queueTtl`, `timeout`, `authorAssociation` minimum for comment commands.
-- Concurrency: one live session per `concurrencyKey`; a matching event while queued or running joins it (same semantics as today's `concurrency-id`).
-- Schedules: cron entries in the same rules file, run locally.
-- Usage limits: per-account cooldown table in SQLite; retry on the next account's execution profile.
-- Gap: cursor older than 1 day → fire the rule's `onGap` (e.g. ejection prompt's 24-hour discovery).
-- Output: local log files per session; optional comment on the triggering PR/issue with status.
-- Runs as a launchd/systemd service (reuse auto-harness host-service installers if they lift cleanly).
+**Payloads**
 
-### Reused from auto-harness
+- Stored gzipped next to the envelope, minus `installation` (always) and the keys in `PayloadDrop` (default `repository,organization`).
+- Payloads over `PayloadMaxBytes` (default 1 MB of JSON) or over 350 KB gzipped are left out with `payloadOmitted: "too_large"`.
+- `GET /events?payload=0` skips them (`payloadOmitted: "not_requested"`).
+- Payload text, and attacker-influenced envelope strings (`headRef`, `workflow`, `sender.login`), are untrusted input.
 
-Lift nearly as-is: `executor.ts`, `pty-runner.ts`, kill/timeout helpers, `secret-redacting-runner.ts`, `child-env.ts`, `resolve-executable.ts`, `github-app.ts`, git helpers (`git-commands`, `git-ref-resolution`, `git.ts` minus inventory hooks, `git-worktree-*`, `git-main-checkout-status`), `usage-adapter*.ts`, `usage-limit.ts` (drop the `providerAccountId` gate), `resume-ref-capture.ts`, `command-resume.ts`, the `Command` shape, `render-harness-prompt.mts`, `execution-profiles.ts`, `setup-script.ts`, `terminal-hook.ts`.
+## CLI
 
-Rewrite: `worktree-manager.ts` (static config, keep claim + main lock), session run/orchestration (local logs instead of control-plane reporting), a small poll loop instead of `daemon-loop.ts`, new queue/concurrency/cooldown module (~100–300 lines).
+`packages/cli` publishes the `hook-harness` npm package.
 
-Not carried over: web UI, API, WebSockets, multi-host assignment, S3 logs, Slack, users/API keys, self-updater.
+**Operations** (need AWS credentials):
+
+- `deploy`, `update`, `teardown --yes`, `status`;
+- `token create|list|revoke`.
+
+Deployment state lives in `~/.config/hook-harness/deployments/<stack>.json`.
+
+**Consumers** (need a reader token from `login` or `token create --login`):
+
+- `wait` blocks until a match and prints one JSON object, `{events, gap, cursor, timedOut?}`. It exits 0 for a match, a gap or a timeout, and 1 for an auth failure or the relay unreachable.
+- `tail` streams NDJSON.
+- Filters:
+  - Flags form one filter, and each repeatable `--filter '<EventFilter JSON>'` is another. Filters are OR'd.
+  - A filter can match on `event`, `action`, `repo`, `branch`, `command`, `reason`, `conclusion`, `pr`, `minAssociation` and `ignoreSenders`.
+- Cursors:
+  - `--after <cursor>` is stateless and caller-owned.
+  - `--cursor <name>` uses a local state file.
+  - `--since <time|duration>` sets a start time.
+- `serve`: a local SSE daemon. One poller fans out to many local clients, with per-client filters and `Last-Event-ID` replay.
+- `mcp`: a stdio MCP server with `wait_for_events` and `get_events` tools. The caller owns the cursor.
+
+**Plugin:** Claude Code and Codex plugins bundle the MCP server and a skill on consuming events.
+
+## Consumers
+
+The first consumer is Vouchington's `/triage-loop` session. It:
+
+- runs `hook-harness wait` in the background, filtering on merge-queue ejections, failed `main` workflow runs and `/shepherd` comments;
+- owns its cursor and delivery-ID dedupe;
+- sweeps the GitHub API on `gap: true` and on its own 6-hour cycle;
+- runs scheduled prompts and dispatches subagents itself;
+- checks author trust for comment-driven work.
 
 ## Layout
 
-pnpm workspace, TypeScript, Node 24 LTS (`nodejs24.x`, `@types/node@24`).
+pnpm workspace, TypeScript, Node 24 LTS (`nodejs24.x`, `@types/node@24`). Source runs with Node's native type stripping.
 
-- `packages/protocol`: envelope, filters, rule matching.
-- `packages/relay`: Lambda handler, normalizers, auth, store, `template.yaml`.
-- `packages/runner`: poll loop, rules, queue, worktrees, process runners (lifted), CLI (`deploy`, `token`, `run`, `tail`, `wait`).
+- `packages/protocol`: envelope, filters and matching.
+- `packages/relay`: Lambda handler, normalizers, auth, payload packing, and `template.yaml`. It's bundled with esbuild.
+- `packages/cli`: the `hook-harness` CLI (operations, `wait`/`tail`, `serve`, `mcp`).
 
-Repo setup: MIT; 100% coverage + Codecov (needs a token while private); Dependabot grouped, 1-week cooldown, automerge; labeler; actionlint; oxlint (200 lines/file) + oxfmt; `ubuntu-slim`; latest deps.
+Repo setup:
 
-## Milestones
-
-1. **Scaffold + relay.** Repo setup, protocol, normalizers, Lambda, template, `deploy`, `token`. Deploy check on Vouchington: real delivery volume, 413s, cold start, Cost Explorer.
-2. **Runner core.** Poll/cursor, rules, queue + concurrency, lifted runners and worktrees, local logs, `tail`/`wait`.
-3. **Migrate ejections + fix-main.** Enable in hook-harness, flip `HARNESS_MERGE_QUEUE_EJECTION_ENABLED` / fix-main gate off, compare for a few days, delete workflows.
-4. **Comment commands** (`fix-issue`, `plan`, `shepherd` incl. resume).
-5. **Schedules** (`scheduled-prompts`) and **fix-dependabot** (decide: keep its rerun step as a workflow or move it into the runner).
-6. **Retire auto-harness** after all surfaces are migrated.
-
-pr-shepherd integration is out of scope for now.
+- MIT license; 100% coverage with Codecov.
+- Dependabot: grouped updates, a 1-week cooldown, automerge.
+- labeler and actionlint.
+- oxlint (200 lines per file) and oxfmt.
+- CI runs on `ubuntu-slim`; dependencies are kept at their latest versions.
 
 ## Risks
 
-| Risk                                   | Mitigation                                                                                                       |
-| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Host down                              | Events wait up to a day; `onGap` sweeps after longer outages                                                     |
-| Missed webhook / 413                   | Best-effort; visible in App delivery log; scheduled sweeps cover ejections and main failures                     |
-| Comment-command abuse on a public repo | `authorAssociation` minimum per rule (private org members appear as CONTRIBUTOR/NONE); rules filter on `command` |
-| Prompt injection via event strings     | Payload text is untrusted; `--no-payload`; external-data labelling                                               |
-| Free-tier sharing in the AWS account   | On-demand switch; cost is cents either way                                                                       |
-
-## Verification
-
-- Unit: Vitest 100% (signature, normalization per event, token scope, key-condition bounds, dedupe, rule matching, concurrency join, cooldown fallback, gap).
-- E2E on a test repo with a real App: deploy, event → session starts within one poll, revoked token refused, tampered signature refused, forced ejection runs the ejection rule.
-- Migration: per surface, hook-harness results match auto-harness for several days before the workflow is deleted.
+| Risk                                   | Mitigation                                                                                   |
+| -------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Consumer down                          | Events wait up to a day; `gap: true` tells the consumer to sweep the GitHub API              |
+| Missed webhook / 413                   | Best-effort; visible in the App delivery log; consumer sweeps cover ejections and main failures |
+| Comment-command abuse on a public repo | Consumers check `authorAssociation`/`author` (private org members appear as CONTRIBUTOR/NONE) |
+| Prompt injection via event strings     | Payload text is untrusted; `--no-payload`; external-data labelling                           |
+| Token leak                             | Read-only, scoped, expiring tokens; `token revoke` takes effect on the next poll              |
+| Volume and cost                        | The App subscription list is the volume control; on-demand billing                           |
