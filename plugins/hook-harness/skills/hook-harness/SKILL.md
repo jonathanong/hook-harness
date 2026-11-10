@@ -20,20 +20,20 @@ Reads GitHub events stored by a hook-harness relay (a Lambda plus DynamoDB, 1 da
 
 ## 2. Wait with a caller-owned cursor
 
-MCP `wait_for_events` inputs: `owner`, `repos?`, `filters?` (EventFilter[], OR'd), `after?` (cursor), `since?`, `timeout_seconds?`, `settle_seconds?`, `include_payload?`. `get_events` is a single poll. CLI equivalent:
+MCP `wait_for_events` inputs: `owner`, `repos?`, `filters?` (EventFilter[], OR'd; unknown keys are rejected), `after?` (cursor), `since?` (ISO time or duration like `2h`), `cursor_name?` (persist the cursor in a local state file instead of passing `after`), `include_payload?` (default true), `timeout_seconds?` (1–600, default 240) and `settle_seconds?` (0–60, default 5). `get_events` takes the same inputs minus the timeouts and runs a single poll. `filter_help` returns the filter reference with examples. CLI equivalent:
 
 ```sh
 hook-harness wait --owner acme --filter '<json>' --after "$CURSOR" --timeout 30m
 ```
 
-Both return `{"events":[...],"gap":false,"cursor":"...","timedOut":true?}`. The CLI exits 0 in all cases (read the JSON); exit 1 means auth failure, invalid cursor, or relay unreachable until the timeout.
+Both return `{"events":[...],"gap":false,"cursor":"...","timedOut":true?}`. The CLI exits 0 in all cases (read the JSON); exit 1 means auth failure, invalid cursor, or relay unreachable until the timeout. The MCP tools report those as tool errors; an auth error means the user must run `hook-harness login`.
 
 Rules:
 
-- **You own the cursor.** Persist the returned `cursor` (file, memory, task state) after handling events and pass it as `after` next time. Without `after`, the start is the CLI state file, then `since`, then now.
+- **You own the cursor.** Persist the returned `cursor` (file, memory, task state) after handling events and pass it as `after` next time. Without `after`, the MCP tools start from `cursor_name`'s state file if given, then `since`, then now; the CLI uses its `default` state file (or `--cursor <name>`).
 - **Dedupe on envelope `id`.** The same delivery can reappear across polls or as a replay.
 - **`gap: true`** means your cursor is older than the retention window and events were lost. Sweep the GitHub API (open PRs, recent runs, issues) to resync, handle `events` too, then continue from the returned `cursor`.
-- **Stay free.** `wait` blocks up to the timeout. Claude Code: run the CLI with Bash `run_in_background` or under Monitor, and call the MCP tool with a modest `timeout_seconds`. Codex: use the equivalent background command or a separate session. Loop: wait, handle, persist cursor, wait again.
+- **Stay free.** `wait` blocks up to the timeout. Claude Code: run the CLI with Bash `run_in_background` or under Monitor, and keep the MCP tool's `timeout_seconds` under the client's tool-call limit (`MCP_TOOL_TIMEOUT` in Claude Code). Codex: use the equivalent background command or a separate session. Loop: wait, handle, persist cursor, wait again.
 - Flags for the CLI: `--event --action --reason --conclusion --branch --workflow --command --pr --min-association --ignore-sender --repo --no-payload --since --settle --interval --cursor`. `--filter '<json>'` is repeatable; filters are OR'd.
 
 ## 3. Filters
