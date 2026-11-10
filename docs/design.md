@@ -176,7 +176,7 @@ pnpm workspace, TypeScript, Node 24 LTS (`nodejs24.x`, `@types/node@24`). Source
 Repo setup:
 
 - MIT license; 100% coverage with Codecov.
-- Dependabot: grouped updates, a 1-week cooldown, automerge.
+- Dependabot: grouped updates and a 1-week cooldown. Auto-merge is off in this repo; green Dependabot PRs are merged by hand.
 - labeler and actionlint.
 - oxlint (200 lines per file) and oxfmt.
 - CI runs on `ubuntu-slim`; dependencies are kept at their latest versions.
