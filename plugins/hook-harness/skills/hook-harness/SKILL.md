@@ -34,19 +34,22 @@ Rules:
 - **Dedupe on envelope `id`.** The same delivery can reappear across polls or as a replay.
 - **`gap: true`** means your cursor is older than the retention window and events were lost. Sweep the GitHub API (open PRs, recent runs, issues) to resync, handle `events` too, then continue from the returned `cursor`.
 - **Stay free.** `wait` blocks up to the timeout. Claude Code: run the CLI with Bash `run_in_background` or under Monitor, and keep the MCP tool's `timeout_seconds` under the client's tool-call limit (`MCP_TOOL_TIMEOUT` in Claude Code). Codex: use the equivalent background command or a separate session. Loop: wait, handle, persist cursor, wait again.
-- Flags for the CLI: `--event --action --reason --conclusion --branch --workflow --command --pr --min-association --ignore-sender --repo --no-payload --since --settle --interval --cursor`. `--filter '<json>'` is repeatable; filters are OR'd.
+- Flags for the CLI: `--event --action --reason --conclusion --branch --workflow --command --sender --label --reviewer --pr --min-association --ignore-sender --repo --no-payload --since --settle --interval --cursor`. `--filter '<json>'` is repeatable; filters are OR'd.
+- Presets: `--on` (MCP: `on`) takes `ejection`, `main-failure`, `dependabot-pr`, `review-requested[:<login|team>]`, `label:<name>` and `/<command>`, repeatable or comma lists, OR'd with other filters. Prefer them over hand-written JSON.
 
 ## 3. Filters
 
-A filter ANDs its fields; each field takes a string or array. Fields: `repo`, `event`, `action`, `reason`, `conclusion`, `branch` (baseRef for PR events, else headRef), `workflow`, `command`, `pr`, `minAssociation`, `ignoreSenders`. **Every action is stored, so always set `action`** or you will match edits, closes and labels you did not mean to.
+A filter ANDs its fields; each field takes a string or array. Fields: `repo`, `event`, `action`, `reason`, `conclusion`, `branch` (baseRef for PR events, else headRef), `workflow`, `command`, `sender`, `label`, `reviewer`, `pr`, `minAssociation`, `ignoreSenders`. **Every action is stored, so always set `action`** or you will match edits, closes and labels you did not mean to.
 
-Merge-queue ejections. Filters cannot negate, so match every dequeue and drop `reason == "MERGE"` (a successful merge) in your handler; `reason` says why a PR was ejected (e.g. `CI_FAILURE`, `MERGE_CONFLICT`):
+Merge-queue ejections: use the `ejection` preset. `dequeued` also fires with `reason: "MERGE"` on a successful merge (and `MANUAL` when someone removes a PR), and filters cannot negate, so the preset lists the failure reasons; `reason` says why a PR was ejected (e.g. `CI_FAILURE`, `MERGE_CONFLICT`).
+
+A label added to an issue or PR (the `label:needs-review` preset); `label` is set on `labeled`/`unlabeled` actions and `reviewer` on `review_requested`:
 
 ```json
-{ "event": "pull_request", "action": "dequeued" }
+{ "action": "labeled", "label": "needs-review" }
 ```
 
-To react only to one cause, add it: `{"event":"pull_request","action":"dequeued","reason":"CI_FAILURE"}`.
+To react only to one ejection cause, add it: `{"event":"pull_request","action":"dequeued","reason":"CI_FAILURE"}`.
 
 Failed main CI:
 

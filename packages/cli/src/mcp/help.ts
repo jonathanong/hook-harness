@@ -10,13 +10,25 @@ export const FILTER_HELP = `EventFilter fields (all optional; each is a string o
   pr           pull request number (number or array of numbers)
   minAssociation  minimum author association: OWNER > MEMBER > COLLABORATOR > CONTRIBUTOR > FIRST_TIME_CONTRIBUTOR > FIRST_TIMER > NONE.
                   GitHub reports private org members as CONTRIBUTOR/NONE; use with care.
+  sender       sender login: dependabot[bot], ...
+  label        label added or removed (action labeled / unlabeled on issues and PRs)
+  reviewer     requested reviewer login or team slug (action review_requested)
   ignoreSenders   array of logins whose events never match
+
+Presets (\`on\` input; CLI --on): ejection, main-failure, dependabot-pr, review-requested,
+review-requested:<login|team>, label:<name>, /<command>. They are OR'd with \`filters\`.
 
 Within one filter all fields must match (AND). The \`filters\` array is OR'd. Empty or omitted: every event.
 
 Examples:
-  Merge-queue ejections:
-    [{"event":"pull_request","action":"dequeued","reason":"CI_FAILURE"}]
+  Merge-queue ejections (dequeued also fires with reason MERGE on a successful merge):
+    [{"event":"pull_request","action":"dequeued","reason":["CI_FAILURE","CI_TIMEOUT","MERGE_CONFLICT"]}]
+  A label added to an issue or PR:
+    [{"action":"labeled","label":"needs-review"}]
+  Review requested from someone:
+    [{"event":"pull_request","action":"review_requested","reviewer":"octocat"}]
+  New Dependabot PRs:
+    [{"event":"pull_request","action":["opened","reopened"],"sender":"dependabot[bot]"}]
   Failed workflow runs on main:
     [{"event":"workflow_run","action":"completed","conclusion":"failure","branch":"main"}]
   /shepherd comments from maintainers, ignoring a bot:

@@ -109,4 +109,26 @@ describe("wait argument errors", () => {
   it("buildFilters returns nothing for no flags", () => {
     expect(buildFilters({})).toEqual([]);
   });
+
+  it("--on adds preset filters and --sender matches the sender", async () => {
+    const bot = { login: "dependabot[bot]", type: "Bot" };
+    const mixed = [
+      ev("dep", 1, { event: "pull_request", action: "opened", sender: bot }),
+      ev("merged", 2, { event: "pull_request", action: "dequeued", reason: "MERGE" }),
+      ev("eject", 3, { event: "pull_request", action: "dequeued", reason: "CI_FAILURE" }),
+      ev("cmd", 4, { event: "issue_comment", action: "created", command: "/shepherd" }),
+    ];
+    const h = await watchHarness([page(mixed), page(mixed)]);
+    await wait(
+      ["--owner", "o", "--on", "ejection,/shepherd", "--on", "dependabot-pr", "--settle", "0s"],
+      h.ctx,
+    );
+    expect(ids(h)).toEqual(["dep", "eject", "cmd"]);
+    expect(buildFilters({ sender: ["dependabot[bot]"] })).toEqual([
+      { sender: ["dependabot[bot]"] },
+    ]);
+    expect(() => buildFilters({ on: ["nope"] })).toThrow(
+      /unknown --on "nope"; use one of ejection/,
+    );
+  });
 });

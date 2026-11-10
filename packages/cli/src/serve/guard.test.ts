@@ -8,6 +8,13 @@ import { filtersFromQuery } from "./query.ts";
 describe("filtersFromQuery", () => {
   const filters = (query: string) => filtersFromQuery(new URLSearchParams(query));
 
+  it("accepts presets and a sender, scoped by repo", () => {
+    expect(filters("on=/shepherd&sender=dependabot[bot]&repo=o/r")).toEqual([
+      { repo: ["o/r"], sender: ["dependabot[bot]"] },
+      { repo: ["o/r"], event: "issue_comment", action: "created", command: "/shepherd" },
+    ]);
+  });
+
   it("maps params onto the same filter semantics as wait", () => {
     expect(
       filters(

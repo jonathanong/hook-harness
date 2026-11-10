@@ -34,6 +34,17 @@ export function ownerOf(payload: Payload): string | null {
   );
 }
 
+/** Label and requested-reviewer signals, set only when the payload carries them. */
+function targets(payload: Payload): Partial<Envelope> {
+  const label: string | undefined = payload.label?.name;
+  const reviewer: string | undefined =
+    payload.requested_reviewer?.login ?? payload.requested_team?.slug;
+  return {
+    ...(label !== undefined && { label }),
+    ...(reviewer !== undefined && { requestedReviewer: reviewer }),
+  };
+}
+
 /** Envelope with the fields every event shares; callers pass the family-specific signals. */
 export function build(
   event: string,
@@ -49,6 +60,7 @@ export function build(
     repo: payload.repository?.full_name ?? null,
     action: payload.action ?? null,
     sender: authorOf(payload.sender),
+    ...targets(payload),
     ...fields,
   });
 }
