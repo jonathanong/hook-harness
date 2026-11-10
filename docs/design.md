@@ -179,11 +179,11 @@ Repo setup:
 
 ## Risks
 
-| Risk                                   | Mitigation                                                                                   |
-| -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Consumer down                          | Events wait up to a day; `gap: true` tells the consumer to sweep the GitHub API              |
+| Risk                                   | Mitigation                                                                                      |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Consumer down                          | Events wait up to a day; `gap: true` tells the consumer to sweep the GitHub API                 |
 | Missed webhook / 413                   | Best-effort; visible in the App delivery log; consumer sweeps cover ejections and main failures |
-| Comment-command abuse on a public repo | Consumers check `authorAssociation`/`author` (private org members appear as CONTRIBUTOR/NONE) |
-| Prompt injection via event strings     | Payload text is untrusted; `--no-payload`; external-data labelling                           |
-| Token leak                             | Read-only, scoped, expiring tokens; `token revoke` takes effect on the next poll              |
-| Volume and cost                        | The App subscription list is the volume control; on-demand billing                           |
+| Comment-command abuse on a public repo | Consumers check `authorAssociation`/`author` (private org members appear as CONTRIBUTOR/NONE)   |
+| Prompt injection via event strings     | Payload text is untrusted; `--no-payload`; external-data labelling                              |
+| Token leak                             | Read-only, scoped, expiring tokens; `token revoke` takes effect on the next poll                |
+| Volume and cost                        | The App subscription list is the volume control; on-demand billing                              |
