@@ -28,9 +28,20 @@ Parameters:
     Type: Number
     Default: 25
     MinValue: 1
+  AlarmEmail:
+    Type: String
+    Default: ""
+    Description: Email for CloudWatch alarms (relay 5xx, throttles, no webhooks). Empty creates no alarms.
+  AlarmQuietHours:
+    Type: Number
+    Default: 12
+    MinValue: 1
+    MaxValue: 24
+    Description: Alarm when no webhook has been stored for this many hours.
 
 Conditions:
   IsProvisioned: !Equals [!Ref BillingMode, PROVISIONED]
+  HasAlarmEmail: !Not [!Equals [!Ref AlarmEmail, ""]]
 
 Resources:
   Table:
@@ -136,6 +147,79 @@ Resources:
       Action: lambda:InvokeFunction
       Principal: "*"
       InvokedViaFunctionUrl: true
+
+  AlarmTopic:
+    Type: AWS::SNS::Topic
+    Condition: HasAlarmEmail
+    Properties:
+      TopicName: !Sub "${AWS::StackName}-alarms"
+      Subscription:
+        - Protocol: email
+          Endpoint: !Ref AlarmEmail
+
+  # Url5xxCount covers both handler crashes and handled 500s (e.g. DynamoDB failures).
+  ServerErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-relay-5xx"
+      AlarmDescription: The relay function URL returned 5xx responses.
+      Namespace: AWS/Lambda
+      MetricName: Url5xxCount
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref Function
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlarmTopic]
+      OKActions: [!Ref AlarmTopic]
+
+  ThrottlesAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-relay-throttles"
+      AlarmDescription: Relay invocations were throttled; webhooks may have been dropped.
+      Namespace: AWS/Lambda
+      MetricName: Throttles
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref Function
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlarmTopic]
+      OKActions: [!Ref AlarmTopic]
+
+  # Every stored webhook is one PutItem; the sample count of its latency metric counts them.
+  NoWebhooksAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-no-webhooks"
+      AlarmDescription: !Sub "No webhook stored for ${AlarmQuietHours} hours: check the GitHub App's webhook deliveries."
+      Namespace: AWS/DynamoDB
+      MetricName: SuccessfulRequestLatency
+      Dimensions:
+        - Name: TableName
+          Value: !Ref Table
+        - Name: Operation
+          Value: PutItem
+      Statistic: SampleCount
+      Period: 3600
+      EvaluationPeriods: !Ref AlarmQuietHours
+      Threshold: 1
+      ComparisonOperator: LessThanThreshold
+      TreatMissingData: breaching
+      AlarmActions: [!Ref AlarmTopic]
+      OKActions: [!Ref AlarmTopic]
 
 Outputs:
   FunctionUrl:

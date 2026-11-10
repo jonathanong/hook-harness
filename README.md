@@ -18,6 +18,8 @@ npx hook-harness deploy          # run any command without installing
 pnpm add -g hook-harness         # or install globally, then: hook-harness <command>
 ```
 
+Alarms: `hook-harness update --alarm-email you@example.com` adds CloudWatch alarms for relay 5xx responses, throttles, and no webhook stored for `--alarm-quiet-hours` (default 12). Confirm the subscription email AWS sends; `--alarm-email ""` removes them.
+
 Requires Node 24+. The package bundles the relay Lambda code and CloudFormation template that `deploy` and `update` use. Publishing is described in [docs/publishing.md](docs/publishing.md).
 
 ## Install the plugin
