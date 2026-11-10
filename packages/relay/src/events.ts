@@ -8,6 +8,8 @@ import { fail, json } from "./respond.ts";
 import type { Deps, UrlEvent, UrlResult } from "./types.ts";
 
 const DEFAULT_LIMIT = 100;
+/** Cursor suffix: resume strictly after the cursor without replaying the overlap. */
+export const SKIP_OVERLAP = "!";
 const MAX_LIMIT = 500;
 /** Function URL responses are capped at 6 MB; stop filling a page well before that. */
 export const RESPONSE_BUDGET = 5_000_000;
@@ -25,21 +27,28 @@ export async function handleEvents(event: UrlEvent, deps: Deps): Promise<UrlResu
   if (!owner) return fail(400, "owner is required");
   if (!tokenAllowsOwner(scopes, owner)) return fail(403, "forbidden");
 
-  // `after` is a previous cursor (`<15-digit ms>#<id>`) or a bare epoch-ms start time.
+  // `after` is a previous cursor (`<15-digit ms>#<id>`) or a bare epoch-ms start time. A trailing
+  // `!` (see SKIP_OVERLAP) resumes exactly at the cursor instead of replaying the overlap.
   const after = query["after"];
-  const afterDigits = after === undefined ? undefined : /^(\d{1,15})(?:#|$)/.exec(after)?.[1];
-  if (after !== undefined && afterDigits === undefined) return fail(400, "invalid after");
+  const parsed = after === undefined ? undefined : /^(\d{1,15})(#[^!]*)?(!?)$/.exec(after);
+  if (after !== undefined && !parsed) return fail(400, "invalid after");
   const wanted = query["repos"]?.toLowerCase().split(",");
 
   const retentionStart = deps.now() - DAY_MS;
-  const afterMs = afterDigits === undefined ? undefined : Number(afterDigits);
-  const lowerMs =
-    afterMs === undefined ? retentionStart : Math.max(afterMs - OVERLAP_MS, retentionStart);
-  const lower = padMs(lowerMs);
+  const afterMs = parsed ? Number(parsed[1]) : undefined;
+  // Items at or before `boundary` were (normally) delivered already: the replayed overlap.
+  const boundary = parsed ? padMs(afterMs!) + (parsed[2] ?? "") : undefined;
+  const lower =
+    afterMs === undefined
+      ? padMs(retentionStart)
+      : parsed![3] && afterMs >= retentionStart
+        ? boundary!
+        : padMs(Math.max(afterMs - OVERLAP_MS, retentionStart));
   const limit = parseLimit(query["limit"]);
   const withPayload = query["payload"] !== "0";
 
   const events: Envelope[] = [];
+  let counted = 0;
   let lastReturned: string | undefined;
   let lastScanned: string | undefined;
   let startKey: Record<string, unknown> | undefined;
@@ -71,17 +80,26 @@ export async function handleEvents(event: UrlEvent, deps: Deps): Promise<UrlResu
       bytes += size;
       events.push(envelope);
       lastReturned = lastScanned;
-      if (events.length === limit) filled = true;
-      if (filled) break;
+      // Replayed overlap items don't count toward the limit: a burst bigger than the limit inside
+      // the overlap would otherwise refill every page and pin the cursor in place.
+      if (boundary === undefined || lastScanned > boundary) counted += 1;
+      if (counted === limit) {
+        filled = true;
+        break;
+      }
     }
     startKey = page.LastEvaluatedKey;
   } while (startKey && !filled);
 
   // When the limit or size budget cut the scan short, resume right after the last returned
-  // event; otherwise everything scanned (even if filtered out) is behind us.
+  // event; otherwise everything scanned (even if filtered out) is behind us. If the size budget
+  // ran out inside the overlap, the next read must skip the overlap or it would stop here again.
+  const stuck = filled && boundary !== undefined && lastReturned! <= boundary;
   const body: EventsPage = {
     events,
-    cursor: (filled ? lastReturned : lastScanned) ?? after ?? lower,
+    cursor: stuck
+      ? `${boundary}${SKIP_OVERLAP}`
+      : ((filled ? lastReturned : lastScanned) ?? after ?? lower),
     gap: afterMs !== undefined && afterMs < retentionStart,
   };
   return json(200, body);

@@ -24,10 +24,10 @@ describe("cursor", () => {
     const { next } = advance({ sk: "a", seen: [] }, page([old, recent], "b"));
     expect(next).toEqual({ sk: "b", seen: ["recent"] });
 
-    const many = Array.from({ length: 250 }, (_, i) => ev(`e${i}`, 1000));
+    const many = Array.from({ length: 1050 }, (_, i) => ev(`e${i}`, 1000));
     const capped = advance({ sk: "a", seen: [] }, page(many, "c")).next.seen;
-    expect(capped).toHaveLength(200);
-    expect(capped.at(-1)).toBe("e249");
+    expect(capped).toHaveLength(1000);
+    expect(capped.at(-1)).toBe("e1049");
   });
 
   it("keeps the previous seen list for an empty page", () => {
