@@ -42,7 +42,9 @@ minimumReleaseAgeExclude:
   - "@oxlint/binding-win32-x64-msvc@1.93.0"
   - oxfmt@0.78.0
   - oxlint@1.93.0
+  - "@aws-sdk/client-cloudformation@3.1165.0"
   - "@aws-sdk/client-dynamodb@3.1165.0"
+  - "@aws-sdk/client-lambda@3.1165.0"
   - "@aws-sdk/core@3.980.2"
   - "@aws-sdk/credential-provider-env@3.972.83"
   - "@aws-sdk/credential-provider-http@3.972.85"
