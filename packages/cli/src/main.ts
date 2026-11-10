@@ -1,6 +1,7 @@
 import { UsageError } from "./args.ts";
 import { deploy, update } from "./commands/deploy.ts";
 import { login } from "./commands/login.ts";
+import { mcp } from "./mcp/command.ts";
 import { status } from "./commands/status.ts";
 import { tail } from "./commands/tail.ts";
 import { teardown } from "./commands/teardown.ts";
@@ -18,6 +19,7 @@ export const builtinCommands: Record<string, Command> = {
   login,
   wait,
   tail,
+  mcp,
 };
 
 export const USAGE = `hook-harness <command> [flags]
