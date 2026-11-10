@@ -50,7 +50,7 @@ Source:
                            by the server and again locally; --no-payload is set on \`serve\`, not here.
                            Send a serve --auth-token via HOOK_HARNESS_SOURCE_TOKEN.
 
-Resuming (precedence: --after > --cursor state file > --since > now):
+Resuming (precedence: --after > --since > --cursor state file > now):
   --after <cursor>         Resume from a printed cursor; stateless (state file is not read)
   --cursor <name>          Name of the local cursor state file (default "default");
                            with --after it is still written when given
