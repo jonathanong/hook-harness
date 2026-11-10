@@ -50,8 +50,8 @@ A bootstrap publish has no provenance attestation; later releases do.
 3. The workflow checks the tag matches the package version, runs `pnpm check` and `pnpm build`,
    and runs `npm publish` in `packages/cli` with provenance. It installs npm 12 first because OIDC
    publishing requires npm 11.5.1 or newer. (`pnpm publish` can't attach provenance in this setup.)
-4. If staged publishing is on for the package, the version is staged instead of released. Approve
-   it with 2FA: `npm stage list hook-harness`, then `npm stage approve <stage-id>`.
+4. The release is live as `latest` once the job finishes; `npm view hook-harness version` can lag
+   by a minute or two.
 
 Version `0.1.0` is already set; the first release tag is `v0.1.0`. A version can be published
 only once, so if Option B published `0.1.0`, bump before the first CI release.
