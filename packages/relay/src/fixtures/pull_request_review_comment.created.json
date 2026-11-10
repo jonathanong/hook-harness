@@ -1,0 +1,20 @@
+{
+  "action": "created",
+  "comment": {
+    "body": "SECRET BODY",
+    "html_url": "https://github.com/o/r/pull/42#discussion_r1",
+    "author_association": "OWNER"
+  },
+  "pull_request": {
+    "number": 42,
+    "title": "SECRET TITLE",
+    "head": { "sha": "abc123", "ref": "feature" },
+    "base": { "ref": "main" }
+  },
+  "repository": {
+    "full_name": "o/r",
+    "html_url": "https://github.com/o/r",
+    "default_branch": "main"
+  },
+  "sender": { "login": "carol", "type": "User" }
+}

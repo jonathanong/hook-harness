@@ -1,0 +1,13 @@
+{
+  "sha": "abc123",
+  "state": "failure",
+  "description": "SECRET BODY",
+  "branches": [{ "name": "ignored" }],
+  "commit": { "html_url": "https://github.com/o/r/commit/abc123" },
+  "repository": {
+    "full_name": "o/r",
+    "html_url": "https://github.com/o/r",
+    "default_branch": "main"
+  },
+  "sender": { "login": "ci", "type": "Bot" }
+}

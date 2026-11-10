@@ -1,0 +1,12 @@
+{
+  "ref": "refs/heads/main",
+  "after": "abc123",
+  "compare": "https://github.com/o/r/compare/000...abc123",
+  "head_commit": { "message": "SECRET BODY" },
+  "repository": {
+    "full_name": "o/r",
+    "html_url": "https://github.com/o/r",
+    "default_branch": "main"
+  },
+  "sender": { "login": "alice", "type": "User" }
+}
