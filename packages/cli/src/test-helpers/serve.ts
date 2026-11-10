@@ -12,6 +12,8 @@ export function gatedSleep() {
   const sleepers = new Set<Sleeper>();
   return {
     sleep(ms: number, signal: AbortSignal): Promise<void> {
+      // Like timers/promises: an already-aborted signal must not leave the sleeper parked.
+      if (signal.aborted) return Promise.resolve();
       return new Promise((resolve) => {
         const sleeper = { ms, resolve: () => resolve() };
         sleepers.add(sleeper);
