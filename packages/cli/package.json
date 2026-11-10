@@ -1,7 +1,7 @@
 {
   "name": "hook-harness",
   "version": "0.2.0",
-  "description": "hook-harness CLI: deploy, update, teardown, status, tokens, and the runner service.",
+  "description": "GitHub events in, agent runs out: deploy the relay, then wait, tail, serve or mcp.",
   "keywords": [
     "agents",
     "aws",

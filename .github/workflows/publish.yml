@@ -26,7 +26,7 @@ jobs:
         with:
           node-version: "24.x"
           cache: pnpm
-      # Trusted publishing needs npm >= 11.5.1; pnpm publish delegates to the npm on PATH.
+      # Trusted publishing needs npm >= 11.5.1. pnpm publish can't attach provenance here, so npm publishes.
       - run: npm install -g npm@12.2.2
       - name: Release tag matches package version
         env:
@@ -40,4 +40,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - run: pnpm build
-      - run: pnpm publish --filter hook-harness --no-git-checks
+      # dist/ is fully bundled and there are no runtime dependencies, so npm can publish it as is.
+      - run: npm publish
+        working-directory: packages/cli
