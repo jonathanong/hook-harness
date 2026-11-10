@@ -10,6 +10,14 @@ cli:
   - changed-files:
       - any-glob-to-any-file: "packages/cli/**"
 
+plugin:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "plugins/**"
+          - ".claude-plugin/**"
+          - ".agents/**"
+          - "marketplace.json"
+
 docs:
   - changed-files:
       - any-glob-to-any-file:

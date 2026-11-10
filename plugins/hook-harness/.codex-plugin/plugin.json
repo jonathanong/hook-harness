@@ -1,0 +1,34 @@
+{
+  "name": "hook-harness",
+  "version": "0.0.0",
+  "description": "Consume GitHub events (merge-queue ejections, failed CI, slash commands) from Codex.",
+  "author": {
+    "name": "Jonathan Ong",
+    "email": "jonathanrichardong@gmail.com",
+    "url": "https://github.com/jonathanong"
+  },
+  "homepage": "https://github.com/jonathanong/hook-harness",
+  "repository": "https://github.com/jonathanong/hook-harness",
+  "license": "MIT",
+  "keywords": ["github", "webhooks", "events", "mcp", "automation", "codex"],
+  "skills": "./skills/",
+  "mcpServers": "./.codex.mcp.json",
+  "interface": {
+    "displayName": "hook-harness",
+    "shortDescription": "React to GitHub events from Codex",
+    "longDescription": "Wait for GitHub events such as merge-queue ejections, failed main CI and slash-command comments through a hook-harness relay, with a caller-owned cursor.",
+    "developerName": "Jonathan Ong",
+    "category": "Coding",
+    "capabilities": ["Interactive", "Read"],
+    "websiteURL": "https://github.com/jonathanong/hook-harness",
+    "privacyPolicyURL": "https://github.com/jonathanong/hook-harness",
+    "termsOfServiceURL": "https://github.com/jonathanong/hook-harness",
+    "defaultPrompt": [
+      "Wait for merge-queue ejections in my org",
+      "Tell me when main CI fails",
+      "Watch for /shepherd comments"
+    ],
+    "brandColor": "#2563EB",
+    "screenshots": []
+  }
+}

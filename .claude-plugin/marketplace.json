@@ -1,0 +1,18 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "hook-harness",
+  "description": "GitHub events in, agent runs out",
+  "owner": {
+    "name": "Jonathan Ong",
+    "email": "jonathanrichardong@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "hook-harness",
+      "description": "Consume GitHub events in agentic coding tools",
+      "source": "./plugins/hook-harness",
+      "category": "productivity",
+      "homepage": "https://github.com/jonathanong/hook-harness"
+    }
+  ]
+}

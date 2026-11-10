@@ -1,0 +1,15 @@
+{
+  "name": "hook-harness",
+  "description": "Consume GitHub events (merge-queue ejections, failed CI, slash commands) in agentic coding tools",
+  "version": "0.0.0",
+  "author": {
+    "name": "Jonathan Ong",
+    "email": "jonathanrichardong@gmail.com"
+  },
+  "homepage": "https://github.com/jonathanong/hook-harness",
+  "repository": "https://github.com/jonathanong/hook-harness",
+  "license": "MIT",
+  "keywords": ["github", "webhooks", "events", "mcp", "automation"],
+  "skills": "./plugins/hook-harness/skills/",
+  "mcpServers": "./plugins/hook-harness/.mcp.json"
+}

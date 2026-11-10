@@ -1,0 +1,20 @@
+{
+  "name": "jonathanong",
+  "interface": {
+    "displayName": "Jonathan Ong"
+  },
+  "plugins": [
+    {
+      "name": "hook-harness",
+      "source": {
+        "source": "local",
+        "path": "./plugins/hook-harness"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Coding"
+    }
+  ]
+}
