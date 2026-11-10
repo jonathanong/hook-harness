@@ -44,6 +44,7 @@ describe("hook-harness mcp", () => {
     const messages = lines.map((line) => JSON.parse(line) as { id: number; result: any });
     expect(messages.map((m) => m.id)).toEqual([1, 2]);
     expect(messages[0]!.result.serverInfo.name).toBe("hook-harness");
+    expect(messages[0]!.result.serverInfo.version).toMatch(/^\d+\.\d+\.\d+/);
     expect(messages[1]!.result.tools).toHaveLength(3);
     expect(h.out).toEqual([]);
     expect(h.err.join("\n")).toContain("serving on stdio");

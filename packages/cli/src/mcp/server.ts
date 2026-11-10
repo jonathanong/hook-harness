@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
+import pkg from "../../package.json" with { type: "json" };
 import type { Ctx } from "../types.ts";
 import { FILTER_HELP } from "./help.ts";
 import { getInput, outputShape, waitInput, waitOutput } from "./schema.ts";
@@ -23,7 +24,7 @@ ${UNTRUSTED}`;
 const READ_ONLY = { readOnlyHint: true, openWorldHint: true } as const;
 
 export function createServer(ctx: Ctx): McpServer {
-  const server = new McpServer({ name: "hook-harness", version: "0.0.0" });
+  const server = new McpServer({ name: "hook-harness", version: pkg.version });
   server.registerTool(
     "wait_for_events",
     {
