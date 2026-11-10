@@ -26,15 +26,21 @@ export function matchesAny(filters: EventFilter[], event: Envelope): boolean {
   return filters.length === 0 || filters.some((filter) => matches(event, filter));
 }
 
-/** Precedence: `--after` > `--cursor` state file > `--since` > now. */
-async function startCursor(values: Values, ctx: Ctx, name: string): Promise<Cursor> {
-  const after = str(values, "after");
-  if (after) return decodeCursor(after);
-  const stored = await readCursor(ctx.env, name);
-  if (stored) return decodeCursor(stored);
-  const since = str(values, "since");
+/** The encoded cursor if given, else `since` (ISO timestamp or duration), else now. */
+export function startFrom(
+  encoded: string | undefined,
+  since: string | undefined,
+  ctx: Ctx,
+): Cursor {
+  if (encoded) return decodeCursor(encoded);
   const nowMs = ctx.now().getTime();
   return { sk: String(since ? parseSince(since, nowMs) : nowMs), seen: [] };
+}
+
+/** Precedence: `--after` > `--cursor` state file > `--since` > now. */
+async function startCursor(values: Values, ctx: Ctx, name: string): Promise<Cursor> {
+  const encoded = str(values, "after") || (await readCursor(ctx.env, name));
+  return startFrom(encoded, str(values, "since"), ctx);
 }
 
 export async function openSession(

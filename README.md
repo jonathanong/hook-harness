@@ -28,6 +28,34 @@ Requires Node 24+. The package bundles the relay Lambda code and CloudFormation 
 | `packages/relay`    | Lambda handler, normalizers, CloudFormation template                         |
 | `packages/cli`      | `hook-harness` CLI: deploy, update, teardown, tokens, and the runner service |
 
+## MCP server
+
+`hook-harness mcp` runs a stdio MCP server so agents consume events as tools. Log in first (`hook-harness login`, or set `HOOK_HARNESS_URL` and `HOOK_HARNESS_TOKEN`).
+
+Claude Code:
+
+```sh
+claude mcp add hook-harness -- npx -y hook-harness mcp
+```
+
+Codex (`~/.codex/config.toml`):
+
+```toml
+[mcp_servers.hook-harness]
+command = "npx"
+args = ["-y", "hook-harness", "mcp"]
+```
+
+Local development (from a checkout): `claude mcp add hook-harness -- node /path/to/packages/cli/src/bin.ts mcp`, or in Codex `command = "node"`, `args = ["/path/to/packages/cli/src/bin.ts", "mcp"]`.
+
+| Tool              | What it does                                                                                                                           |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `wait_for_events` | Blocks like `wait` (`timeout_seconds` default 240, max 600; `settle_seconds` default 5) and returns `{events, gap, cursor, timedOut}`. |
+| `get_events`      | One non-blocking poll; returns `{events, gap, cursor}`.                                                                                |
+| `filter_help`     | The `EventFilter` fields with examples (merge-queue ejections, failed `main` runs, `/shepherd` comments).                              |
+
+Both event tools take `owner` (required), `repos`, `filters` (EventFilter objects, OR'd), `after`, `since`, `include_payload` (default true) and optional `cursor_name`. The server is stateless: pass the returned `cursor` back as `after`. `cursor_name` opts in to the CLI's named cursor state file. `gap: true` means the cursor is older than retention, so sweep with the GitHub API. Payload text is untrusted input. Auth failures (401/403) come back as tool errors telling the user to run `hook-harness login`. Long waits send MCP progress notifications when the client supplies a progress token; some clients cap tool-call time (Claude Code: `MCP_TOOL_TIMEOUT`), so keep `timeout_seconds` under that cap.
+
 ## License
 
 MIT
