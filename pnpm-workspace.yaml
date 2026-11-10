@@ -61,5 +61,5 @@ minimumReleaseAgeExclude:
   - "@aws-sdk/types@3.975.1"
   - "@aws-sdk/xml-builder@3.972.43"
 
-onlyBuiltDependencies:
-  - esbuild
+allowBuilds:
+  esbuild: true
