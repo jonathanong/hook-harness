@@ -36,6 +36,10 @@ export interface Envelope {
   /** The author's relationship to the repo: OWNER, MEMBER, COLLABORATOR, CONTRIBUTOR, ... */
   authorAssociation: string | null;
   url: string | null;
+  /** Label added or removed (`labeled`/`unlabeled` on issues and PRs). */
+  label?: string | null;
+  /** Requested reviewer login or team slug (`review_requested`/`review_request_removed`). */
+  requestedReviewer?: string | null;
   /** Webhook payload with dropped keys removed. Untrusted text: titles, bodies, comments. */
   payload?: Record<string, unknown>;
   /** Why `payload` is absent: disabled by config, too large to store, or not requested. */
@@ -56,6 +60,12 @@ export interface EventFilter {
   pr?: number | number[];
   /** Minimum `authorAssociation`, e.g. `MEMBER`. Missing association never matches. */
   minAssociation?: string;
+  /** Label added or removed, e.g. `needs-review`; pair with action `labeled`. */
+  label?: string | string[];
+  /** Requested reviewer login or team slug; pair with action `review_requested`. */
+  reviewer?: string | string[];
+  /** Sender login(s), e.g. `dependabot[bot]`. */
+  sender?: string | string[];
   /** Logins whose events never match. */
   ignoreSenders?: string[];
 }

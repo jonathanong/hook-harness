@@ -1,4 +1,4 @@
-import type { EventFilter } from "@hook-harness/protocol";
+import { preset, PRESETS, type EventFilter } from "@hook-harness/protocol";
 
 import { list, UsageError, type Values } from "../args.ts";
 
@@ -12,6 +12,10 @@ export const WATCH_SPEC = {
   branch: { type: "string", multiple: true },
   workflow: { type: "string", multiple: true },
   command: { type: "string", multiple: true },
+  sender: { type: "string", multiple: true },
+  label: { type: "string", multiple: true },
+  reviewer: { type: "string", multiple: true },
+  on: { type: "string", multiple: true },
   pr: { type: "string", multiple: true },
   "min-association": { type: "string" },
   "ignore-sender": { type: "string", multiple: true },
@@ -31,7 +35,12 @@ export const WATCH_FLAGS = `Scope:
   --repo <owner/name>      Limit to a repo (repeatable or comma list)
 
 Filters (one filter from these flags; events matching ANY filter are kept; none = all events):
-  --event --action --reason --conclusion --branch --workflow --command --pr
+  --on <preset>            Add a preset filter (repeatable or comma list): ejection (merge-queue
+                           ejection, not a merge), main-failure (failed workflow run on main),
+                           dependabot-pr (new Dependabot PR), review-requested[:<login|team>],
+                           label:<name> (label added to an issue or PR), /<command> (new comment)
+  --event --action --reason --conclusion --branch --workflow --command --sender --label
+  --reviewer --pr
                            Repeatable or comma lists
   --min-association <a>    Minimum author association, e.g. MEMBER. Every comment is stored, so
                            filter with --command /plan etc. GitHub reports private org members as
@@ -63,7 +72,18 @@ Timing:
 export const LOGIN_HELP =
   "Login: `hook-harness login`, or HOOK_HARNESS_URL and HOOK_HARNESS_TOKEN.";
 
-const STRING_FIELDS = ["event", "action", "reason", "conclusion", "branch", "workflow", "command"];
+const STRING_FIELDS = [
+  "event",
+  "action",
+  "reason",
+  "conclusion",
+  "branch",
+  "workflow",
+  "command",
+  "sender",
+  "label",
+  "reviewer",
+];
 
 /** Raw repeated values, not comma-split (JSON contains commas). */
 function raw(values: Values, key: string): string[] {
@@ -101,7 +121,15 @@ export function buildFilters(values: Values): EventFilter[] {
   const ignored = list(values, "ignore-sender");
   if (ignored.length > 0) flagFilter.ignoreSenders = ignored;
   const filters = Object.keys(flagFilter).length > 0 ? [flagFilter as EventFilter] : [];
-  return [...filters, ...raw(values, "filter").map(parseJsonFilter)];
+  const presets = list(values, "on").map((name) => {
+    const found = preset(name);
+    if (!found) {
+      const known = [...Object.keys(PRESETS), "label:<name>", "/<command>"].join(", ");
+      throw new UsageError(`unknown --on "${name}"; use one of ${known}`);
+    }
+    return found;
+  });
+  return [...filters, ...presets, ...raw(values, "filter").map(parseJsonFilter)];
 }
 
 /** Adds a `repo` condition to each filter (or a lone filter when none) unless it sets its own. */

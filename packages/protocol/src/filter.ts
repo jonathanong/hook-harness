@@ -61,6 +61,9 @@ export function matches(envelope: Envelope, filter: EventFilter): boolean {
     oneOf(filter.conclusion, envelope.conclusion) &&
     oneOf(filter.branch, branchOf(envelope)) &&
     oneOf(filter.workflow, envelope.workflow) &&
-    oneOf(filter.command, envelope.command)
+    oneOf(filter.command, envelope.command) &&
+    oneOf(filter.sender, envelope.sender?.login ?? null) &&
+    oneOf(filter.label, envelope.label ?? null) &&
+    oneOf(filter.reviewer, envelope.requestedReviewer ?? null)
   );
 }

@@ -24,7 +24,7 @@ export const commitComment: Normalizer = (payload, ctx) =>
     url: payload.comment.html_url,
   });
 
-/** Issue lifecycle (opened, labeled, closed, ...). Title, body and labels stay in the payload. */
+/** Issue lifecycle (opened, labeled, closed, ...). Title and body stay in the payload. */
 export const issues: Normalizer = (payload, ctx) =>
   build("issues", payload, ctx, {
     issue: payload.issue.number,

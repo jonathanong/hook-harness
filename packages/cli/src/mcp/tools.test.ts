@@ -155,6 +155,19 @@ describe("wait_for_events", () => {
   });
 });
 
+describe("presets", () => {
+  it("on adds preset filters and rejects unknown names", async () => {
+    const merged = ev("merged", 1, { event: "pull_request", action: "dequeued", reason: "MERGE" });
+    const eject = ev("eject", 2, { event: "pull_request", action: "dequeued", reason: "ROLLBACK" });
+    const h = await start([page([merged, eject], "s1")]);
+    const result = jsonOf(await h.call("get_events", { owner: "o", on: ["ejection"] }));
+    expect((result.events as Array<{ id: string }>).map((e) => e.id)).toEqual(["eject"]);
+    const bad = await h.call("get_events", { owner: "o", on: ["nope"] });
+    expect(bad.isError).toBe(true);
+    expect(textOf(bad)).toMatch(/unknown preset/);
+  });
+});
+
 describe("get_events", () => {
   it("polls once without sleeping and returns the page", async () => {
     const h = await start([page([ev("a", 1), ev("b", 2, { event: "push" })], "s1", true)]);

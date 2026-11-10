@@ -1,4 +1,4 @@
-import type { EventFilter } from "@hook-harness/protocol";
+import { preset, type EventFilter } from "@hook-harness/protocol";
 import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import type {
   CallToolResult,
@@ -52,7 +52,10 @@ async function openToolSession(
       { owner: input.owner, repos: input.repos ?? [], payload: input.include_payload },
       INTERVAL_MS,
     ),
-    filters: (input.filters ?? []) as EventFilter[],
+    filters: [
+      ...((input.filters ?? []) as EventFilter[]),
+      ...(input.on ?? []).map((name) => preset(name)!),
+    ],
     cursor: startFrom(input.after || stored, input.since, ctx),
     intervalMs: INTERVAL_MS,
     ...timing,

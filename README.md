@@ -35,6 +35,25 @@ codex plugin marketplace add jonathanong/hook-harness
 
 The MCP server runs `npx -y hook-harness mcp`. Log in once with `hook-harness login` (see [docs/github-app.md](docs/github-app.md) for tokens). Optional: `hook-harness serve` runs a local SSE daemon.
 
+## Common triggers
+
+`--on` adds named filters (repeatable or comma lists; OR'd with any other filters). The MCP tools take the same names as `on`.
+
+| Preset                                               | Matches                                                                             |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `ejection`                                           | Merge-queue ejection (`pull_request` `dequeued` with a failure reason, not `MERGE`) |
+| `main-failure`                                       | Failed `workflow_run` on `main`                                                     |
+| `dependabot-pr`                                      | Dependabot opened or reopened a PR                                                  |
+| `review-requested`, `review-requested:<login\|team>` | A review was requested (from that reviewer)                                         |
+| `label:<name>`                                       | That label was added to an issue or PR                                              |
+| `/<command>`                                         | A new comment starting with that command, e.g. `/shepherd`                          |
+
+```sh
+hook-harness wait --owner acme --on ejection,main-failure,dependabot-pr,/shepherd --on label:needs-review --no-payload
+```
+
+Field flags (`--event --action --reason --conclusion --branch --workflow --command --sender --label --reviewer --pr`) build one more filter; `--filter '<json>'` adds arbitrary ones.
+
 ## Sharing one poller: `hook-harness serve`
 
 Several agents on one machine can share a single relay poller. `serve` polls the relay once and fans events out over Server-Sent Events; `wait` and `tail` read from it with `--source` (or `HOOK_HARNESS_SOURCE`) and print exactly what they print when polling the relay.
@@ -45,7 +64,7 @@ hook-harness wait --source http://127.0.0.1:7391 --event pull_request --command 
 curl -N 'http://127.0.0.1:7391/events?event=push&branch=main'
 ```
 
-- `GET /events` streams `id: <cursor>`, `event: envelope`, `data: <envelope JSON>`. Query params filter per client with the same semantics as `wait`'s flags: `event action repo branch command reason conclusion workflow pr minAssociation ignoreSender`, plus repeatable `filter=<EventFilter JSON>`; all filters are OR'd.
+- `GET /events` streams `id: <cursor>`, `event: envelope`, `data: <envelope JSON>`. Query params filter per client with the same semantics as `wait`'s flags: `event action repo branch command reason conclusion workflow sender on pr minAssociation ignoreSender`, plus repeatable `filter=<EventFilter JSON>`; all filters are OR'd.
 - `Last-Event-ID` (or `?after=`) replays matching events from an in-memory ring buffer (last 1000 events or 1 hour, whichever is smaller). A position older than the buffer gets `event: gap` with `{"cursor":"..."}`, then the stream continues live. `: ping` comments go out every 15s. Clients that fall too far behind are disconnected.
 - `GET /healthz` returns `{ok, upstream: {lastPollAt, lastError, cursor}, clients, buffered}`.
 - Relay errors back off like `tail` and appear in `/healthz`. `SIGINT`/`SIGTERM` close the streams and save the cursor (`--cursor <name>`, same state files as `tail`).
@@ -86,7 +105,7 @@ Local development (from a checkout): `claude mcp add hook-harness -- node /path/
 | `get_events`      | One non-blocking poll; returns `{events, gap, cursor}`.                                                                                |
 | `filter_help`     | The `EventFilter` fields with examples (merge-queue ejections, failed `main` runs, `/shepherd` comments).                              |
 
-Both event tools take `owner` (required), `repos`, `filters` (EventFilter objects, OR'd), `after`, `since`, `include_payload` (default true) and optional `cursor_name`. The server is stateless: pass the returned `cursor` back as `after`. `cursor_name` opts in to the CLI's named cursor state file. `gap: true` means the cursor is older than retention, so sweep with the GitHub API. Payload text is untrusted input. Auth failures (401/403) come back as tool errors telling the user to run `hook-harness login`. Long waits send MCP progress notifications when the client supplies a progress token; some clients cap tool-call time (Claude Code: `MCP_TOOL_TIMEOUT`), so keep `timeout_seconds` under that cap.
+Both event tools take `owner` (required), `repos`, `filters` (EventFilter objects, OR'd), `on` (presets, see below), `after`, `since`, `include_payload` (default true) and optional `cursor_name`. The server is stateless: pass the returned `cursor` back as `after`. `cursor_name` opts in to the CLI's named cursor state file. `gap: true` means the cursor is older than retention, so sweep with the GitHub API. Payload text is untrusted input. Auth failures (401/403) come back as tool errors telling the user to run `hook-harness login`. Long waits send MCP progress notifications when the client supplies a progress token; some clients cap tool-call time (Claude Code: `MCP_TOOL_TIMEOUT`), so keep `timeout_seconds` under that cap.
 
 ## License
 

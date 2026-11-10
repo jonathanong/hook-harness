@@ -1,3 +1,4 @@
+import { preset } from "@hook-harness/protocol";
 import { z } from "zod";
 
 const strings = z.union([z.string(), z.array(z.string())]);
@@ -15,6 +16,9 @@ export const eventFilter = z
     command: strings.optional().describe("lowercased slash command of a comment, e.g. /shepherd"),
     pr: z.union([z.number().int(), z.array(z.number().int())]).optional(),
     minAssociation: z.string().optional().describe("minimum author association, e.g. MEMBER"),
+    sender: strings.optional().describe("sender login, e.g. dependabot[bot]"),
+    label: strings.optional().describe("label added/removed; pair with action labeled"),
+    reviewer: strings.optional().describe("requested reviewer login or team slug"),
     ignoreSenders: z.array(z.string()).optional().describe("logins whose events never match"),
   })
   .describe("Each field matches when the envelope value equals it or is one of the array values.");
@@ -28,6 +32,15 @@ const scope = {
     .describe(
       "EventFilter objects, OR'd: an event is kept when ANY filter matches; fields inside one " +
         "filter are AND'd. Omit for all events. Call filter_help for fields and examples.",
+    ),
+  on: z
+    .array(z.string().refine((name) => preset(name) !== undefined, "unknown preset"))
+    .optional()
+    .describe(
+      "Preset filters, OR'd with `filters`: ejection (merge-queue ejection, not a merge), " +
+        "main-failure (failed workflow run on main), dependabot-pr (new Dependabot PR), " +
+        "review-requested[:<login|team>], label:<name> (label added to an issue or PR), or " +
+        "/<command> such as /shepherd (new comment with that command).",
     ),
   after: z
     .string()
