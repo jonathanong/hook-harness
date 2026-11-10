@@ -21,8 +21,8 @@ Parameters not passed keep their previous values on update.`;
 
 const DEPLOY_HELP = `hook-harness deploy [flags]
 
-Creates the stack if absent (otherwise updates it), then uploads packages/relay/dist/index.mjs.
-Run \`pnpm build\` first.
+Creates the stack if absent (otherwise updates it), then uploads the relay bundle.
+From a repo checkout, run \`pnpm build\` first.
 
 ${FLAGS}
 

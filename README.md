@@ -11,6 +11,15 @@ A GitHub App sends webhooks to a small AWS Lambda, which stores a short summary 
 
 Status: under construction. See [docs/](docs/) for the design.
 
+## Install
+
+```sh
+npx hook-harness deploy          # run any command without installing
+pnpm add -g hook-harness         # or install globally, then: hook-harness <command>
+```
+
+Requires Node 24+. The package bundles the relay Lambda code and CloudFormation template that `deploy` and `update` use. Publishing is described in [docs/publishing.md](docs/publishing.md).
+
 ## Layout
 
 | Package             | What it is                                                                   |
