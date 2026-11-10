@@ -1,23 +1,50 @@
 {
   "name": "hook-harness",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "description": "hook-harness CLI: deploy, update, teardown, status, tokens, and the runner service.",
-  "license": "MIT",
-  "bin": {
-    "hook-harness": "./src/bin.ts"
+  "keywords": [
+    "agents",
+    "aws",
+    "claude-code",
+    "cli",
+    "codex",
+    "github",
+    "lambda",
+    "webhooks"
+  ],
+  "homepage": "https://github.com/jonathanong/hook-harness#readme",
+  "bugs": {
+    "url": "https://github.com/jonathanong/hook-harness/issues"
   },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jonathanong/hook-harness.git",
+    "directory": "packages/cli"
+  },
+  "bin": {
+    "hook-harness": "./dist/bin.mjs"
+  },
+  "files": [
+    "dist"
+  ],
   "type": "module",
-  "dependencies": {
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
     "@aws-sdk/client-cloudformation": "3.1165.0",
     "@aws-sdk/client-dynamodb": "3.1165.0",
     "@aws-sdk/client-lambda": "3.1165.0",
     "@aws-sdk/lib-dynamodb": "3.1165.0",
-    "@hook-harness/protocol": "workspace:*"
-  },
-  "devDependencies": {
+    "@hook-harness/protocol": "workspace:*",
     "@hook-harness/relay": "workspace:*",
-    "aws-sdk-client-mock": "4.1.0"
+    "aws-sdk-client-mock": "4.1.0",
+    "esbuild": "0.28.2"
   },
   "engines": {
     "node": ">=24"

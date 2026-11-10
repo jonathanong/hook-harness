@@ -12,7 +12,7 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run --coverage",
     "test:watch": "vitest",
-    "build": "pnpm --filter @hook-harness/relay run build",
+    "build": "pnpm --filter @hook-harness/relay run build && pnpm --filter hook-harness run build",
     "check": "pnpm lint && pnpm fmt:check && pnpm typecheck && pnpm test"
   },
   "devDependencies": {
