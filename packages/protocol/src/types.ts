@@ -10,8 +10,10 @@ export interface Envelope {
   receivedAt: string;
   event: string;
   action: string | null;
-  /** `owner/name`. */
-  repo: string;
+  /** Account that owns the repo, or the org/installation account for owner-level events. */
+  owner: string;
+  /** `owner/name`; null for owner-level events (e.g. `installation`, `organization`). */
+  repo: string | null;
   prs: number[];
   issue: number | null;
   headSha: string | null;

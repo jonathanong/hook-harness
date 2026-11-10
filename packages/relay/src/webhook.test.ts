@@ -86,11 +86,26 @@ describe("POST /webhook", () => {
     expect((await route(event, deps)).statusCode).toBe(400);
   });
 
-  it("drops events outside the allowlist and uninteresting actions", async () => {
-    expect((await route(webhookEvent("issues", {}), deps)).statusCode).toBe(202);
-    const labeled = fixture("pull_request.dequeued", (p) => (p.action = "labeled"));
-    expect((await route(webhookEvent("pull_request", labeled), deps)).statusCode).toBe(202);
-    expect(ddb.commandCalls(PutCommand)).toHaveLength(0);
+  it("stores unknown events through the generic normalizer", async () => {
+    const fork = { forkee: { id: 1 }, repository: { full_name: "O/r" }, sender: null };
+    expect((await route(webhookEvent("fork", fork), deps)).statusCode).toBe(202);
+    const item = ddb.commandCalls(PutCommand)[0]!.args[0].input.Item!;
+    expect(item).toMatchObject({ PK: "owner#o", repo: "O/r" });
+    expect(JSON.parse(item["envelope"])).toMatchObject({ event: "fork", owner: "O", sender: null });
+  });
+
+  it("stores owner-level events under owner/* and drops ownerless ones", async () => {
+    const install = { action: "created", installation: { account: { login: "acme" } } };
+    await route(webhookEvent("installation", install), deps);
+    const org = { action: "member_added", organization: { login: "acme" } };
+    await route(webhookEvent("organization", org), deps);
+    expect(ddb.commandCalls(PutCommand).map((c) => c.args[0].input.Item!["repo"])).toEqual([
+      "acme/*",
+      "acme/*",
+    ]);
+    const advisory = { action: "published", security_advisory: {} };
+    expect((await route(webhookEvent("security_advisory", advisory), deps)).statusCode).toBe(202);
+    expect(ddb.commandCalls(PutCommand)).toHaveLength(2);
   });
 
   it("returns a generic 500 for other failures", async () => {

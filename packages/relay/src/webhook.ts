@@ -1,7 +1,8 @@
 import { PutCommand } from "@aws-sdk/lib-dynamodb";
 
 import { eventExpiresAt, eventPk, eventSk } from "./keys.ts";
-import { normalizers } from "./normalize/index.ts";
+import { ownerOf } from "./normalize/common.ts";
+import { normalizerFor } from "./normalize/index.ts";
 import { packPayload } from "./payload.ts";
 import { fail, status } from "./respond.ts";
 import { verifySignature } from "./signature.ts";
@@ -22,15 +23,14 @@ export async function handleWebhook(event: UrlEvent, deps: Deps): Promise<UrlRes
   if (!name || !id) return fail(400, "missing headers");
   if (name === "ping") return status(200);
 
-  const normalize = normalizers.get(name);
-  if (!normalize) return status(202);
   const receivedMs = deps.now();
   const payload = JSON.parse(body.toString("utf8"));
-  const envelope = normalize(payload, {
+  // Events are partitioned by owner; one with no owning account has nowhere to go.
+  if (!ownerOf(payload)) return status(202);
+  const envelope = normalizerFor(name)(payload, {
     id,
     receivedAt: new Date(receivedMs).toISOString(),
   });
-  if (!envelope) return status(202);
 
   // GitHub never retries on its own; a manual redelivery gets a new sort key and is
   // replayed to pollers on purpose. Clients dedupe by delivery id only within the overlap.
@@ -38,9 +38,10 @@ export async function handleWebhook(event: UrlEvent, deps: Deps): Promise<UrlRes
     new PutCommand({
       TableName: deps.table,
       Item: {
-        PK: eventPk(envelope.repo.split("/")[0] as string),
+        PK: eventPk(envelope.owner),
         SK: eventSk(receivedMs, id),
-        repo: envelope.repo,
+        // Owner-level events use `owner/*` so only owner-wide tokens can read them.
+        repo: envelope.repo ?? `${envelope.owner}/*`,
         envelope: JSON.stringify(envelope),
         expiresAt: eventExpiresAt(receivedMs),
         ...packPayload(payload, deps.payload),

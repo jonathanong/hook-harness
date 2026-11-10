@@ -1,6 +1,6 @@
 import { emptyEnvelope, type Envelope } from "@hook-harness/protocol";
 
-import type { Context, Payload } from "../types.ts";
+import type { Context, Normalizer, Payload } from "../types.ts";
 
 export function stripHeads(ref: string): string {
   return ref.replace(/^refs\/heads\//, "");
@@ -23,6 +23,17 @@ export function authorOf(user: { login: string; type: string } | null | undefine
   return user ? { login: user.login, type: user.type } : null;
 }
 
+/** Owning account: the repo owner, else the org, else the installation account. */
+export function ownerOf(payload: Payload): string | null {
+  return (
+    payload.repository?.owner?.login ??
+    payload.repository?.full_name?.split("/")[0] ??
+    payload.organization?.login ??
+    payload.installation?.account?.login ??
+    null
+  );
+}
+
 /** Envelope with the fields every event shares; callers pass the family-specific signals. */
 export function build(
   event: string,
@@ -34,9 +45,15 @@ export function build(
     id: ctx.id,
     receivedAt: ctx.receivedAt,
     event,
-    repo: payload.repository.full_name,
+    owner: ownerOf(payload) as string,
+    repo: payload.repository?.full_name ?? null,
     action: payload.action ?? null,
-    sender: { login: payload.sender.login, type: payload.sender.type },
+    sender: authorOf(payload.sender),
     ...fields,
   });
+}
+
+/** Fallback for events without a dedicated normalizer; the payload carries the details. */
+export function generic(event: string): Normalizer {
+  return (payload, ctx) => build(event, payload, ctx, {});
 }
