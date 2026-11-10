@@ -6,7 +6,7 @@ A GitHub App sends webhooks to a small AWS Lambda, which stores a short summary 
 
 - **No control plane.** One Lambda function URL and one DynamoDB table with TTL. Typical cost: cents per month.
 - **No always-on connection.** The runner polls; a session that starts late catches up on the last day of events.
-- **Signals only.** Stored events carry IDs, refs, and outcomes, never titles, bodies, comments, or logs.
+- **Envelope plus payload.** Each event has a small envelope (IDs, refs, outcomes) for filtering and the webhook payload, minus `installation` and, by default, `repository` and `organization`. Configure with `PayloadDrop` / `PayloadMaxBytes`; pollers can skip payloads with `payload=0`. Payload text is untrusted input.
 
 Status: under construction. See [docs/](docs/) for the design.
 

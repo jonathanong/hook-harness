@@ -1,6 +1,8 @@
 import type { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import type { Envelope } from "@hook-harness/protocol";
 
+import type { PayloadConfig } from "./payload.ts";
+
 /** Subset of the Lambda function URL event (payload format 2.0) the relay reads. */
 export interface UrlEvent {
   rawPath: string;
@@ -32,6 +34,7 @@ export interface Deps {
   table: string;
   secret: string | undefined;
   commands: string[];
+  payload: PayloadConfig;
   /** Clock in epoch milliseconds. */
   now: () => number;
 }

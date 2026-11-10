@@ -1,4 +1,7 @@
-/** Normalized GitHub event stored by the relay and returned to runners. Signals only: no titles, bodies or logs. */
+/**
+ * Normalized GitHub event stored by the relay and returned to runners. The envelope holds
+ * signals for filtering; `payload` carries the webhook body minus dropped top-level keys.
+ */
 export interface Envelope {
   v: 1;
   /** `X-GitHub-Delivery`. */
@@ -27,6 +30,10 @@ export interface Envelope {
   sender: { login: string; type: string } | null;
   authorAssociation: string | null;
   url: string | null;
+  /** Webhook payload with dropped keys removed. Untrusted text: titles, bodies, comments. */
+  payload?: Record<string, unknown>;
+  /** Why `payload` is absent: disabled by config, too large to store, or not requested. */
+  payloadOmitted?: "disabled" | "too_large" | "not_requested";
 }
 
 /** Each field matches when the envelope value equals the string or is one of the array's values. */

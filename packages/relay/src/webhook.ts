@@ -2,6 +2,7 @@ import { PutCommand } from "@aws-sdk/lib-dynamodb";
 
 import { eventExpiresAt, eventPk, eventSk } from "./keys.ts";
 import { normalizers } from "./normalize/index.ts";
+import { packPayload } from "./payload.ts";
 import { fail, status } from "./respond.ts";
 import { verifySignature } from "./signature.ts";
 import type { Deps, UrlEvent, UrlResult } from "./types.ts";
@@ -24,7 +25,8 @@ export async function handleWebhook(event: UrlEvent, deps: Deps): Promise<UrlRes
   const normalize = normalizers.get(name);
   if (!normalize) return status(202);
   const receivedMs = deps.now();
-  const envelope = normalize(JSON.parse(body.toString("utf8")), {
+  const payload = JSON.parse(body.toString("utf8"));
+  const envelope = normalize(payload, {
     id,
     receivedAt: new Date(receivedMs).toISOString(),
     commands: deps.commands,
@@ -42,6 +44,7 @@ export async function handleWebhook(event: UrlEvent, deps: Deps): Promise<UrlRes
         repo: envelope.repo,
         envelope: JSON.stringify(envelope),
         expiresAt: eventExpiresAt(receivedMs),
+        ...packPayload(payload, deps.payload),
       },
     }),
   );
