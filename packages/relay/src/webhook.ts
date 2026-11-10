@@ -31,23 +31,19 @@ export async function handleWebhook(event: UrlEvent, deps: Deps): Promise<UrlRes
   });
   if (!envelope) return status(202);
 
-  try {
-    await deps.db.send(
-      new PutCommand({
-        TableName: deps.table,
-        Item: {
-          PK: eventPk(envelope.repo.split("/")[0] as string),
-          SK: eventSk(receivedMs, id),
-          repo: envelope.repo,
-          envelope: JSON.stringify(envelope),
-          expiresAt: eventExpiresAt(receivedMs),
-        },
-        ConditionExpression: "attribute_not_exists(PK)",
-      }),
-    );
-  } catch (error) {
-    // A redelivery of an already stored event is a success.
-    if ((error as Error).name !== "ConditionalCheckFailedException") throw error;
-  }
+  // GitHub never retries on its own; a manual redelivery gets a new sort key and is
+  // replayed to pollers on purpose. Clients dedupe by delivery id only within the overlap.
+  await deps.db.send(
+    new PutCommand({
+      TableName: deps.table,
+      Item: {
+        PK: eventPk(envelope.repo.split("/")[0] as string),
+        SK: eventSk(receivedMs, id),
+        repo: envelope.repo,
+        envelope: JSON.stringify(envelope),
+        expiresAt: eventExpiresAt(receivedMs),
+      },
+    }),
+  );
   return status(202);
 }

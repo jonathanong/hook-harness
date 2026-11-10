@@ -11,7 +11,7 @@ beforeEach(() => {
 });
 
 describe("POST /webhook", () => {
-  it("stores a normalized event with a TTL and a conditional write", async () => {
+  it("stores a normalized event with a TTL", async () => {
     const result = await route(
       webhookEvent("pull_request", fixture("pull_request.dequeued")),
       deps,
@@ -19,7 +19,7 @@ describe("POST /webhook", () => {
     expect(result).toEqual({ statusCode: 202 });
     const [call] = ddb.commandCalls(PutCommand);
     const input = call!.args[0].input;
-    expect(input.ConditionExpression).toBe("attribute_not_exists(PK)");
+    expect(input.ConditionExpression).toBeUndefined();
     expect(input.Item).toMatchObject({
       PK: "owner#o",
       repo: "o/r",
@@ -79,13 +79,6 @@ describe("POST /webhook", () => {
     const labeled = fixture("pull_request.dequeued", (p) => (p.action = "labeled"));
     expect((await route(webhookEvent("pull_request", labeled), deps)).statusCode).toBe(202);
     expect(ddb.commandCalls(PutCommand)).toHaveLength(0);
-  });
-
-  it("treats a redelivery as success", async () => {
-    const error = Object.assign(new Error("exists"), { name: "ConditionalCheckFailedException" });
-    ddb.on(PutCommand).rejects(error);
-    const result = await route(webhookEvent("push", fixture("push")), deps);
-    expect(result.statusCode).toBe(202);
   });
 
   it("returns a generic 500 for other failures", async () => {
