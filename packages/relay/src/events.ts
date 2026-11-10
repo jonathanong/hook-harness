@@ -22,12 +22,14 @@ export async function handleEvents(event: UrlEvent, deps: Deps): Promise<UrlResu
   if (!owner) return fail(400, "owner is required");
   if (!tokenAllowsOwner(scopes, owner)) return fail(403, "forbidden");
 
+  // `after` is a previous cursor (`<15-digit ms>#<id>`) or a bare epoch-ms start time.
   const after = query["after"];
-  if (after !== undefined && !/^\d{15}/.test(after)) return fail(400, "invalid after");
+  const afterDigits = after === undefined ? undefined : /^(\d{1,15})(?:#|$)/.exec(after)?.[1];
+  if (after !== undefined && afterDigits === undefined) return fail(400, "invalid after");
   const wanted = query["repos"]?.toLowerCase().split(",");
 
   const retentionStart = deps.now() - DAY_MS;
-  const afterMs = after === undefined ? undefined : Number(after.slice(0, 15));
+  const afterMs = afterDigits === undefined ? undefined : Number(afterDigits);
   const lowerMs =
     afterMs === undefined ? retentionStart : Math.max(afterMs - OVERLAP_MS, retentionStart);
   const lower = padMs(lowerMs);

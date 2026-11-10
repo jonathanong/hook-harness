@@ -109,8 +109,15 @@ describe("GET /events query", () => {
     expect(body).toMatchObject({ gap: true });
   });
 
+  it("accepts a bare epoch-ms start time", async () => {
+    const body = await bodyOf(get({ owner: "o", after: String(NOW - 1000) }));
+    expect(query()[0]!.ExpressionAttributeValues![":lower"]).toBe(pad(NOW - 61_000));
+    expect(body).toMatchObject({ cursor: String(NOW - 1000), gap: false });
+  });
+
   it("rejects an invalid cursor", async () => {
     expect((await route(get({ owner: "o", after: "junk" }), deps)).statusCode).toBe(400);
+    expect((await route(get({ owner: "o", after: "1234x" }), deps)).statusCode).toBe(400);
   });
 
   it("clamps and defaults the limit", async () => {
