@@ -32,7 +32,9 @@ export const WATCH_FLAGS = `Scope:
 Filters (one filter from these flags; events matching ANY filter are kept; none = all events):
   --event --action --reason --conclusion --branch --workflow --command --pr
                            Repeatable or comma lists
-  --min-association <a>    Minimum author association, e.g. MEMBER
+  --min-association <a>    Minimum author association, e.g. MEMBER. Every comment is stored, so
+                           filter with --command /plan etc. GitHub reports private org members as
+                           CONTRIBUTOR/NONE: use this carefully or verify membership via the API.
   --ignore-sender <login>  Drop events from these logins (repeatable)
   --filter '<json>'        An EventFilter as JSON; repeatable, each is another filter
 
@@ -49,9 +51,10 @@ Resuming (precedence: --after > --cursor state file > --since > now):
 
 Timing:
   --interval <d>           Poll interval (default 15s)
-  --settle <d>             After the first match keep collecting this long (default 10s)
+  --settle <d>             After the first match keep collecting this long (default 10s)`;
 
-Login: \`hook-harness login\`, or HOOK_HARNESS_URL and HOOK_HARNESS_TOKEN.`;
+export const LOGIN_HELP =
+  "Login: `hook-harness login`, or HOOK_HARNESS_URL and HOOK_HARNESS_TOKEN.";
 
 const STRING_FIELDS = ["event", "action", "reason", "conclusion", "branch", "workflow", "command"];
 

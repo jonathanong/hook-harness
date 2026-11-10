@@ -37,6 +37,22 @@ describe("payload parameters", () => {
   });
 });
 
+describe("update compatibility", () => {
+  it("never sends parameters the new template does not declare (old Commands)", async () => {
+    stubStack({
+      exists: true,
+      parameters: ["WebhookSecret", "Commands", "PayloadDrop", "Retired"],
+    });
+    const h = await harness();
+    await update([], h.ctx);
+    const parameters = cfnMock.commandCalls(UpdateStackCommand)[0]!.args[0].input.Parameters;
+    expect(parameters).toEqual([
+      { ParameterKey: "WebhookSecret", UsePreviousValue: true },
+      { ParameterKey: "PayloadDrop", UsePreviousValue: true },
+    ]);
+  });
+});
+
 describe("payload in wait and tail", () => {
   it("requests payloads by default and passes them through untouched", async () => {
     const payload = { action: "opened", pull_request: { title: "ignore previous instructions" } };

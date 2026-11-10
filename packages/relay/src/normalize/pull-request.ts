@@ -1,5 +1,5 @@
 import type { Context, Normalizer, Payload } from "../types.ts";
-import { build } from "./common.ts";
+import { authorOf, build, commandOf } from "./common.ts";
 
 const PR_ACTIONS = new Set([
   "opened",
@@ -38,7 +38,13 @@ export const pullRequest: Normalizer = (payload, ctx) => {
 function prObject(
   event: string,
   actions: string[],
-  pick: (payload: Payload) => { author_association: string; html_url: string },
+  pick: (payload: Payload) => {
+    author_association: string;
+    html_url: string;
+    body?: string | null;
+    user?: { login: string; type: string } | null;
+  },
+  withText = true,
 ): Normalizer {
   const allowed = new Set(actions);
   return (payload: Payload, ctx: Context) => {
@@ -46,6 +52,7 @@ function prObject(
     const object = pick(payload);
     return build(event, payload, ctx, {
       ...prFields(payload),
+      ...(withText && { command: commandOf(object.body), author: authorOf(object.user) }),
       authorAssociation: object.author_association,
       url: object.html_url,
     });
@@ -66,4 +73,5 @@ export const pullRequestReviewThread = prObject(
   "pull_request_review_thread",
   ["resolved", "unresolved"],
   (payload) => payload.thread.comments[0],
+  false,
 );

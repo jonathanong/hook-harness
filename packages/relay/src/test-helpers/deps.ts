@@ -16,7 +16,6 @@ export const deps: Deps = {
   db,
   table: "T",
   secret: SECRET,
-  commands: ["/plan", "/fix", "/shepherd"],
   payload: parsePayloadConfig(undefined, undefined),
   now: () => NOW,
 };

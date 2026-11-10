@@ -1,7 +1,6 @@
 import { PutCommand } from "@aws-sdk/lib-dynamodb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { parseCommands } from "./handler.ts";
 import { handler } from "./index.ts";
 import {
   eventExpiresAt,
@@ -45,13 +44,6 @@ describe("token scopes", () => {
   });
 });
 
-describe("parseCommands", () => {
-  it("defaults and normalizes", () => {
-    expect(parseCommands(undefined)).toEqual(["/plan", "/fix", "/shepherd"]);
-    expect(parseCommands(" /Plan, ,/FIX ")).toEqual(["/plan", "/fix"]);
-  });
-});
-
 describe("signature", () => {
   it("signs raw bytes", () => {
     expect(sign(Buffer.from("x"))).toBe(sign("x"));
@@ -64,7 +56,6 @@ describe("handler", () => {
     ddb.on(PutCommand).resolves({});
     vi.stubEnv("TABLE_NAME", "T");
     vi.stubEnv("WEBHOOK_SECRET", "s3cret");
-    vi.stubEnv("COMMANDS", "/plan");
   });
   afterEach(() => vi.unstubAllEnvs());
 

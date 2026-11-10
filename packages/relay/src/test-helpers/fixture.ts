@@ -14,5 +14,4 @@ export function fixture(name: string, edit?: (payload: Payload) => void): Payloa
 export const ctx: Context = {
   id: "d1",
   receivedAt: "2026-11-09T00:00:00.000Z",
-  commands: ["/plan", "/fix"],
 };

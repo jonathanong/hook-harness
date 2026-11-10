@@ -58,6 +58,16 @@ describe("matches", () => {
     expect(matches(dequeued, { branch: "main", repo: "o/r" })).toBe(true);
   });
 
+  it("matches a command only when the envelope has one", () => {
+    const plan = emptyEnvelope({ ...base, event: "issue_comment", command: "/plan" });
+    expect(matches(plan, { command: "/plan" })).toBe(true);
+    expect(matches(plan, { command: ["/fix", "/plan"] })).toBe(true);
+    expect(matches(plan, { command: "/fix" })).toBe(false);
+    const plain = emptyEnvelope({ ...base, event: "issue_comment" });
+    expect(matches(plain, { command: "/plan" })).toBe(false);
+    expect(matches(plain, {})).toBe(true);
+  });
+
   it("matches PR numbers", () => {
     expect(matches(dequeued, { pr: 42 })).toBe(true);
     expect(matches(dequeued, { pr: [1, 2] })).toBe(false);

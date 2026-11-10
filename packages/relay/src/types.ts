@@ -26,14 +26,12 @@ export type Payload = Record<string, any>;
 export interface Context {
   id: string;
   receivedAt: string;
-  commands: string[];
 }
 
 export interface Deps {
   db: DynamoDBDocumentClient;
   table: string;
   secret: string | undefined;
-  commands: string[];
   payload: PayloadConfig;
   /** Clock in epoch milliseconds. */
   now: () => number;

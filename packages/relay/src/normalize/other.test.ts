@@ -4,46 +4,7 @@ import { ctx, fixture } from "../test-helpers/fixture.ts";
 import type { Payload } from "../types.ts";
 import { mergeGroup, push } from "./branch.ts";
 import { checkSuite, status, workflowRun } from "./checks.ts";
-import { issueComment } from "./comment.ts";
 import { normalizers } from "./index.ts";
-
-describe("issueComment", () => {
-  it("stores an allowlisted command on a PR without the text", () => {
-    const envelope = issueComment(fixture("issue_comment.created"), ctx);
-    expect(envelope).toMatchObject({
-      event: "issue_comment",
-      command: "/plan",
-      commentId: 555,
-      issue: 7,
-      prs: [7],
-      authorAssociation: "MEMBER",
-      url: "https://github.com/o/r/pull/7#issuecomment-555",
-    });
-    expect(JSON.stringify(envelope)).not.toContain("SECRET");
-  });
-
-  it("leaves prs empty for plain issues", () => {
-    const envelope = issueComment(
-      fixture("issue_comment.created", (p) => delete p.issue.pull_request),
-      ctx,
-    );
-    expect(envelope?.prs).toEqual([]);
-    expect(envelope?.issue).toBe(7);
-  });
-
-  it("drops other comments, empty bodies and other actions", () => {
-    const body = (text: string) => (p: Payload) => (p.comment.body = text);
-    expect(issueComment(fixture("issue_comment.created", body("/deploy now")), ctx)).toBeNull();
-    expect(issueComment(fixture("issue_comment.created", body("")), ctx)).toBeNull();
-    expect(issueComment(fixture("issue_comment.created", body("hi /plan")), ctx)).toBeNull();
-    expect(
-      issueComment(
-        fixture("issue_comment.created", (p) => (p.action = "edited")),
-        ctx,
-      ),
-    ).toBeNull();
-  });
-});
 
 describe("checks", () => {
   it("normalizes a completed check suite", () => {

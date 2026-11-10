@@ -52,17 +52,20 @@ A small envelope for filtering, plus the webhook payload:
   "conclusion": null,
   "workflow": null,
   "workflowId": null,
-  "command": null, // first token of an issue/PR comment if it is an allowlisted command
+  "command": null, // lowercased first token of a comment/review body if it looks like /plan
   "commentId": null,
-  "sender": { "login": "...", "type": "User" },
+  "sender": { "login": "...", "type": "User" }, // who triggered the delivery
+  "author": { "login": "...", "type": "User" }, // comment/review author; can differ from sender
   "authorAssociation": "MEMBER",
   "url": "...",
 }
 ```
 
+All comments are stored with no command allowlist; `command` is parsed from the first token (matching `^/[a-z0-9][a-z0-9_-]*$`, null otherwise and for deleted comments) and agents or rules filter on it (`/plan`, `/fix`, `/shepherd`, ...). Provenance: `authorAssociation` is the author's relationship to the repo and `author` is the comment author. GitHub reports organization members with private membership as `CONTRIBUTOR` or `NONE` in webhooks, so use `--min-association` carefully or verify membership via the API.
+
 The payload is stored gzipped alongside the envelope, minus `installation` (always) and the keys in `PayloadDrop` (default `repository,organization`). Payloads over `PayloadMaxBytes` (default 1 MB of JSON) or 350 KB gzipped are left out with `payloadOmitted: "too_large"`. `GET /events?payload=0` skips them, and a page stops filling at 5 MB to stay under the 6 MB response cap. Attacker-influenced strings (`headRef`, `workflow`, `sender.login`) are labelled as external data in prompts.
 
-Stored events: `pull_request` (lifecycle incl. `enqueued`/`dequeued`), review events, `issue_comment` (only when it carries an allowlisted command), `check_suite.completed`, `workflow_run.completed`, `status`, `merge_group`, default-branch `push`.
+Stored events: `pull_request` (lifecycle incl. `enqueued`/`dequeued`), review events, `issue_comment` (all comments: created, edited, deleted), `pull_request_review_comment`, `check_suite.completed`, `workflow_run.completed`, `status`, `merge_group`, default-branch `push`.
 
 ## Runner (local, one host)
 
@@ -106,13 +109,13 @@ pr-shepherd integration is out of scope for now.
 
 ## Risks
 
-| Risk                                   | Mitigation                                                                                   |
-| -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Host down                              | Events wait up to a day; `onGap` sweeps after longer outages                                 |
-| Missed webhook / 413                   | Best-effort; visible in App delivery log; scheduled sweeps cover ejections and main failures |
-| Comment-command abuse on a public repo | `authorAssociation` minimum per rule; command allowlist                                      |
-| Prompt injection via event strings     | Payload text is untrusted; `--no-payload`; external-data labelling                           |
-| Free-tier sharing in the AWS account   | On-demand switch; cost is cents either way                                                   |
+| Risk                                   | Mitigation                                                                                                       |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Host down                              | Events wait up to a day; `onGap` sweeps after longer outages                                                     |
+| Missed webhook / 413                   | Best-effort; visible in App delivery log; scheduled sweeps cover ejections and main failures                     |
+| Comment-command abuse on a public repo | `authorAssociation` minimum per rule (private org members appear as CONTRIBUTOR/NONE); rules filter on `command` |
+| Prompt injection via event strings     | Payload text is untrusted; `--no-payload`; external-data labelling                                               |
+| Free-tier sharing in the AWS account   | On-demand switch; cost is cents either way                                                                       |
 
 ## Verification
 

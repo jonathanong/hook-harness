@@ -2,6 +2,7 @@ import { emptyEnvelope } from "@hook-harness/protocol";
 import { describe, expect, it } from "vitest";
 
 import { ctx, fixture } from "../test-helpers/fixture.ts";
+import type { Payload } from "../types.ts";
 import {
   pullRequest,
   pullRequestReview,
@@ -64,6 +65,8 @@ describe("review events", () => {
         event: "pull_request_review",
         action: "submitted",
         sender: { login: "bob", type: "User" },
+        author: { login: "bob", type: "User" },
+        command: null,
         authorAssociation: "COLLABORATOR",
         url: "https://github.com/o/r/pull/42#pullrequestreview-1",
       }),
@@ -76,9 +79,36 @@ describe("review events", () => {
       event: "pull_request_review_comment",
       action: "created",
       authorAssociation: "OWNER",
+      author: { login: "carol", type: "User" },
+      command: null,
       prs: [42],
     });
     expect(JSON.stringify(envelope)).not.toContain("SECRET");
+  });
+
+  it("parses commands in review and review comment bodies", () => {
+    const body = (text: string | null) => (p: Payload) => {
+      (p.comment ?? p.review).body = text;
+    };
+    expect(
+      pullRequestReview(fixture("pull_request_review.submitted", body("/Shepherd now")), ctx)
+        ?.command,
+    ).toBe("/shepherd");
+    expect(
+      pullRequestReviewComment(fixture("pull_request_review_comment.created", body("/fix")), ctx)
+        ?.command,
+    ).toBe("/fix");
+    expect(
+      pullRequestReview(fixture("pull_request_review.submitted", body(null)), ctx)?.command,
+    ).toBeNull();
+  });
+
+  it("has a null author without a user", () => {
+    const envelope = pullRequestReview(
+      fixture("pull_request_review.submitted", (p) => delete p.review.user),
+      ctx,
+    );
+    expect(envelope?.author).toBeNull();
   });
 
   it("normalizes a review thread from its first comment", () => {
@@ -89,6 +119,8 @@ describe("review events", () => {
       action: "resolved",
       authorAssociation: "MEMBER",
       url: "https://github.com/o/r/pull/42#discussion_r2",
+      command: null,
+      author: null,
     });
   });
 
