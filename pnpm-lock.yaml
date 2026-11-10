@@ -185,6 +185,31 @@ importers:
         specifier: ^5.1.0
         version: 5.1.0(@types/node@24.19.2)(@vitest/coverage-v8@5.1.0)(vite@8.3.6(@types/node@24.19.2)(esbuild@0.28.2)(yaml@2.9.1))
 
+  packages/cli:
+    dependencies:
+      '@aws-sdk/client-cloudformation':
+        specifier: 3.1165.0
+        version: 3.1165.0
+      '@aws-sdk/client-dynamodb':
+        specifier: 3.1165.0
+        version: 3.1165.0
+      '@aws-sdk/client-lambda':
+        specifier: 3.1165.0
+        version: 3.1165.0
+      '@aws-sdk/lib-dynamodb':
+        specifier: 3.1165.0
+        version: 3.1165.0(@aws-sdk/client-dynamodb@3.1165.0)
+      '@hook-harness/protocol':
+        specifier: workspace:*
+        version: link:../protocol
+    devDependencies:
+      '@hook-harness/relay':
+        specifier: workspace:*
+        version: link:../relay
+      aws-sdk-client-mock:
+        specifier: 4.1.0
+        version: 4.1.0
+
   packages/protocol: {}
 
   packages/relay:
@@ -211,8 +236,16 @@ importers:
 
 packages:
 
+  '@aws-sdk/client-cloudformation@3.1165.0':
+    resolution: {integrity: sha512-O9Zyydnk9GIEGbisHCXzT81kFKPCLEoDkC/a6U/4g+Jl5/MByV1/X+RH/v6EjUGfJPjtvIFK4iK+ii2dgsFIMw==}
+    engines: {node: '>=20.0.0'}
+
   '@aws-sdk/client-dynamodb@3.1165.0':
     resolution: {integrity: sha512-gzEo0AAaXRH+aVr4irD/ZKthiM2fnVYREeMcvzhaypSCWYR+zVY7geRQts+6RsB6mbN758+HsCvZJBelxDzwBA==}
+    engines: {node: '>=20.0.0'}
+
+  '@aws-sdk/client-lambda@3.1165.0':
+    resolution: {integrity: sha512-PTs7PpG+f35L+DtF4CA25rVBQVtLaC6DJUj1hjWu2EVsbaj9m3zC/qEUOha98fWgk7p4MIVmfbpWaFhb1dLEjw==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/core@3.980.2':
@@ -1396,12 +1429,34 @@ packages:
 
 snapshots:
 
+  '@aws-sdk/client-cloudformation@3.1165.0':
+    dependencies:
+      '@aws-sdk/core': 3.980.2
+      '@aws-sdk/credential-provider-node': 3.972.95
+      '@aws-sdk/types': 3.975.1
+      '@smithy/core': 3.39.0
+      '@smithy/fetch-http-handler': 5.8.1
+      '@smithy/node-http-handler': 4.14.2
+      '@smithy/types': 4.20.0
+      tslib: 2.9.1
+
   '@aws-sdk/client-dynamodb@3.1165.0':
     dependencies:
       '@aws-sdk/core': 3.980.2
       '@aws-sdk/credential-provider-node': 3.972.95
       '@aws-sdk/dynamodb-codec': 3.973.57
       '@aws-sdk/middleware-endpoint-discovery': 3.972.38
+      '@aws-sdk/types': 3.975.1
+      '@smithy/core': 3.39.0
+      '@smithy/fetch-http-handler': 5.8.1
+      '@smithy/node-http-handler': 4.14.2
+      '@smithy/types': 4.20.0
+      tslib: 2.9.1
+
+  '@aws-sdk/client-lambda@3.1165.0':
+    dependencies:
+      '@aws-sdk/core': 3.980.2
+      '@aws-sdk/credential-provider-node': 3.972.95
       '@aws-sdk/types': 3.975.1
       '@smithy/core': 3.39.0
       '@smithy/fetch-http-handler': 5.8.1

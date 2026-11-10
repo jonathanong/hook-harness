@@ -12,6 +12,7 @@ export default defineConfig({
       exclude: [
         "packages/*/src/**/*.test.ts",
         "packages/*/src/**/types.ts",
+        "packages/*/src/bin.ts",
         "packages/*/src/**/test-helpers/**",
       ],
       thresholds: { lines: 100, functions: 100, branches: 100, statements: 100 },
