@@ -17,6 +17,9 @@ const FLAGS = `Flags:
   --payload-drop <keys>       Top-level payload keys not stored (default repository,organization;
                               "" keeps them; installation is always dropped)
   --payload-max-bytes <n>     Largest stored payload in bytes; 0 stores envelopes only
+  --alarm-email <addr>        Email CloudWatch alarms (relay 5xx, throttles, no webhooks); confirm
+                              the subscription email AWS sends. "" removes the alarms
+  --alarm-quiet-hours <n>     Hours without a stored webhook before alarming (default 12, max 24)
 Parameters not passed keep their previous values on update.`;
 
 const DEPLOY_HELP = `hook-harness deploy [flags]

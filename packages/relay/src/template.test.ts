@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { parse, type CollectionTag, type ScalarTag } from "yaml";
 import { describe, expect, it } from "vitest";
 
-const names = ["Ref", "Sub", "GetAtt", "If", "Equals"];
+const names = ["Ref", "Sub", "GetAtt", "If", "Equals", "Not"];
 const scalars: ScalarTag[] = names.map((name) => ({
   tag: `!${name}`,
   resolve: (value: string) => ({ [name === "Ref" ? name : `Fn::${name}`]: value }),
@@ -25,6 +25,8 @@ describe("template.yaml", () => {
     const p = template.Parameters;
     expect(Object.keys(p).sort()).toEqual(
       [
+        "AlarmEmail",
+        "AlarmQuietHours",
         "BillingMode",
         "PayloadDrop",
         "PayloadMaxBytes",
@@ -105,5 +107,29 @@ describe("template.yaml", () => {
       "FunctionUrl",
       "TableName",
     ]);
+  });
+
+  it("creates email alarms only when AlarmEmail is set", () => {
+    const p = template.Parameters;
+    expect([p.AlarmEmail.Default, p.AlarmQuietHours.Default]).toEqual(["", 12]);
+    expect(template.Conditions.HasAlarmEmail).toEqual({
+      "Fn::Not": [{ "Fn::Equals": [{ Ref: "AlarmEmail" }, ""] }],
+    });
+    const alarms = ["AlarmTopic", "ServerErrorsAlarm", "ThrottlesAlarm", "NoWebhooksAlarm"];
+    for (const id of alarms) expect(template.Resources[id].Condition).toBe("HasAlarmEmail");
+    expect(props("AlarmTopic").Subscription).toEqual([
+      { Protocol: "email", Endpoint: { Ref: "AlarmEmail" } },
+    ]);
+    expect(props("ServerErrorsAlarm").MetricName).toBe("Url5xxCount");
+    expect(props("ThrottlesAlarm").MetricName).toBe("Throttles");
+    const quiet = props("NoWebhooksAlarm");
+    expect(quiet.Dimensions).toContainEqual({ Name: "Operation", Value: "PutItem" });
+    expect([quiet.EvaluationPeriods, quiet.TreatMissingData]).toEqual([
+      { Ref: "AlarmQuietHours" },
+      "breaching",
+    ]);
+    for (const id of alarms.slice(1)) {
+      expect(props(id).AlarmActions).toEqual([{ Ref: "AlarmTopic" }]);
+    }
   });
 });

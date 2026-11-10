@@ -10,6 +10,8 @@ export const PARAM_FLAGS: Record<string, string> = {
   "write-capacity": "WriteCapacity",
   "payload-drop": "PayloadDrop",
   "payload-max-bytes": "PayloadMaxBytes",
+  "alarm-email": "AlarmEmail",
+  "alarm-quiet-hours": "AlarmQuietHours",
 };
 
 export interface BuiltParameters {
