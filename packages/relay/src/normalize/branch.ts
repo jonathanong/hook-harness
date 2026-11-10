@@ -2,10 +2,8 @@ import type { Normalizer } from "../types.ts";
 import { build, commitUrl, stripHeads } from "./common.ts";
 
 const QUEUE_REF = /^refs\/heads\/gh-readonly-queue\/.+\/pr-(\d+)-[0-9a-f]+$/;
-const MERGE_GROUP_ACTIONS = new Set(["checks_requested", "destroyed"]);
 
 export const mergeGroup: Normalizer = (payload, ctx) => {
-  if (!MERGE_GROUP_ACTIONS.has(payload.action)) return null;
   const group = payload.merge_group;
   const match = QUEUE_REF.exec(group.head_ref);
   return build("merge_group", payload, ctx, {
@@ -18,12 +16,10 @@ export const mergeGroup: Normalizer = (payload, ctx) => {
   });
 };
 
-/** Only pushes to the repository's default branch. */
-export const push: Normalizer = (payload, ctx) => {
-  if (payload.ref !== `refs/heads/${payload.repository.default_branch}`) return null;
-  return build("push", payload, ctx, {
+/** Pushes to any branch or tag; `headRef` keeps `refs/tags/...` for tags. */
+export const push: Normalizer = (payload, ctx) =>
+  build("push", payload, ctx, {
     headRef: stripHeads(payload.ref),
     headSha: payload.after,
     url: payload.compare,
   });
-};

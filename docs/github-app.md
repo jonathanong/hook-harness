@@ -63,7 +63,7 @@ An event checkbox only appears once you grant the matching permission above.
 - Status
 - Workflow run
 
-The relay ignores any other event (it returns `202` and stores nothing), so subscribing to extras only wastes Lambda invocations.
+The relay stores every event and action the App sends; this subscription list is the only filter, and agents filter the rest. Each extra event costs a Lambda invocation and a DynamoDB write, so only subscribe to events an agent will use. Events without an owning account (e.g. Security advisory, which comes from the global advisory database) are dropped.
 
 ### Private key
 

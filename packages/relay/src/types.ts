@@ -37,4 +37,4 @@ export interface Deps {
   now: () => number;
 }
 
-export type Normalizer = (payload: Payload, ctx: Context) => Envelope | null;
+export type Normalizer = (payload: Payload, ctx: Context) => Envelope;

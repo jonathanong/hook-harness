@@ -42,10 +42,10 @@ describe("checks", () => {
     expect(workflowRun(run, ctx)?.prs).toEqual([9]);
   });
 
-  it("drops incomplete runs and suites", () => {
+  it("stores incomplete runs and suites", () => {
     const requested = (p: Payload) => (p.action = "requested");
-    expect(checkSuite(fixture("check_suite.completed", requested), ctx)).toBeNull();
-    expect(workflowRun(fixture("workflow_run.completed", requested), ctx)).toBeNull();
+    expect(checkSuite(fixture("check_suite.completed", requested), ctx).action).toBe("requested");
+    expect(workflowRun(fixture("workflow_run.completed", requested), ctx).action).toBe("requested");
   });
 
   it("maps status state to conclusion", () => {
@@ -87,13 +87,13 @@ describe("mergeGroup", () => {
     expect(envelope).toMatchObject({ prs: [], reason: null });
   });
 
-  it("drops other actions", () => {
+  it("stores every action", () => {
     expect(
       mergeGroup(
         fixture("merge_group.destroyed", (p) => (p.action = "other")),
         ctx,
-      ),
-    ).toBeNull();
+      ).action,
+    ).toBe("other");
   });
 });
 
@@ -108,13 +108,14 @@ describe("push", () => {
     });
   });
 
-  it("drops other branches", () => {
-    expect(
+  it("stores other branches and tags", () => {
+    const at = (ref: string) =>
       push(
-        fixture("push", (p) => (p.ref = "refs/heads/dev")),
+        fixture("push", (p) => (p.ref = ref)),
         ctx,
-      ),
-    ).toBeNull();
+      ).headRef;
+    expect(at("refs/heads/dev")).toBe("dev");
+    expect(at("refs/tags/v1")).toBe("refs/tags/v1");
   });
 });
 

@@ -47,13 +47,13 @@ describe("pullRequest", () => {
     expect(JSON.stringify(envelope)).not.toContain("SECRET");
   });
 
-  it("drops actions outside the allowlist", () => {
+  it("stores every action", () => {
     expect(
       pullRequest(
         fixture("pull_request.dequeued", (p) => (p.action = "labeled")),
         ctx,
-      ),
-    ).toBeNull();
+      ).action,
+    ).toBe("labeled");
   });
 });
 
@@ -124,12 +124,12 @@ describe("review events", () => {
     });
   });
 
-  it("drops other actions", () => {
+  it("stores every action", () => {
     expect(
       pullRequestReview(
         fixture("pull_request_review.submitted", (p) => (p.action = "edited")),
         ctx,
-      ),
-    ).toBeNull();
+      ).action,
+    ).toBe("edited");
   });
 });

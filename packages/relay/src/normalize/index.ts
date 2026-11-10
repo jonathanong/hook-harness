@@ -2,6 +2,7 @@ import type { Normalizer } from "../types.ts";
 import { mergeGroup, push } from "./branch.ts";
 import { checkSuite, status, workflowRun } from "./checks.ts";
 import { commitComment, issueComment, issues } from "./comment.ts";
+import { generic } from "./common.ts";
 import {
   pullRequest,
   pullRequestReview,
@@ -9,7 +10,7 @@ import {
   pullRequestReviewThread,
 } from "./pull-request.ts";
 
-/** Static allowlist: events absent from this map are dropped without parsing the body. */
+/** Events with extra signals. Any other event is stored through `generic`. */
 export const normalizers = new Map<string, Normalizer>([
   ["pull_request", pullRequest],
   ["pull_request_review", pullRequestReview],
@@ -24,3 +25,7 @@ export const normalizers = new Map<string, Normalizer>([
   ["merge_group", mergeGroup],
   ["push", push],
 ]);
+
+export function normalizerFor(event: string): Normalizer {
+  return normalizers.get(event) ?? generic(event);
+}

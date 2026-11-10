@@ -24,7 +24,7 @@ Decisions (user-confirmed unless marked):
 
 ## Relay (Lambda)
 
-- `POST /webhook`: HMAC over raw bytes (decode base64 bodies; `timingSafeEqual`), static allowlist, normalize, `PutItem` with `expiresAt = now + 1 day`.
+- `POST /webhook`: HMAC over raw bytes (decode base64 bodies; `timingSafeEqual`), normalize (generic fallback for unknown events), `PutItem` with `expiresAt = now + 1 day`.
 - `GET /events?repo=&after=`: bearer token (SHA-256 hash in table, repo scope, expiry, revoked). Key condition `SK > max(after − 60s, now − 1 day)`; client dedupes by delivery ID.
 - Table: events `PK=repo#owner/name`, `SK=<receivedAt ms>#<delivery id>`; tokens `PK=token#<hash>`. Provisioned 25/25 default (always-free), on-demand by parameter.
 - Logs: 1-day retention, system log level `WARN`.
@@ -65,7 +65,7 @@ All comments are stored with no command allowlist; `command` is parsed from the 
 
 The payload is stored gzipped alongside the envelope, minus `installation` (always) and the keys in `PayloadDrop` (default `repository,organization`). Payloads over `PayloadMaxBytes` (default 1 MB of JSON) or 350 KB gzipped are left out with `payloadOmitted: "too_large"`. `GET /events?payload=0` skips them, and a page stops filling at 5 MB to stay under the 6 MB response cap. Attacker-influenced strings (`headRef`, `workflow`, `sender.login`) are labelled as external data in prompts.
 
-Stored events: `pull_request` (lifecycle incl. `enqueued`/`dequeued`), review events, `issue_comment` (all comments: created, edited, deleted), `issues` (all actions), `commit_comment`, `pull_request_review_comment`, `check_suite.completed`, `workflow_run.completed`, `status`, `merge_group`, default-branch `push`.
+Stored events: every event and action the GitHub App subscribes to; the App's event list is the only filter. Events with dedicated normalizers (`pull_request`, review events, `issue_comment`, `issues`, `commit_comment`, `check_suite`, `workflow_run`, `status`, `merge_group`, `push` on any ref) get extra envelope fields; any other event gets `event`, `action`, `owner`, `repo` and `sender`, with details in `payload`. Events are partitioned by `owner` (repo owner, else organization, else installation account). Owner-level events (no repository) have `repo: null`, are readable only with `owner/*` or `*` tokens, and are excluded by `--repo`. Events with no owner at all (e.g. `security_advisory`) are dropped.
 
 ## Runner (local, one host)
 

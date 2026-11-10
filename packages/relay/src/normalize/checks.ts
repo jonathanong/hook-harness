@@ -2,7 +2,6 @@ import type { Normalizer } from "../types.ts";
 import { build, commitUrl } from "./common.ts";
 
 export const checkSuite: Normalizer = (payload, ctx) => {
-  if (payload.action !== "completed") return null;
   const suite = payload.check_suite;
   return build("check_suite", payload, ctx, {
     prs: suite.pull_requests.map((pr: { number: number }) => pr.number),
@@ -14,7 +13,6 @@ export const checkSuite: Normalizer = (payload, ctx) => {
 };
 
 export const workflowRun: Normalizer = (payload, ctx) => {
-  if (payload.action !== "completed") return null;
   const run = payload.workflow_run;
   return build("workflow_run", payload, ctx, {
     prs: run.pull_requests.map((pr: { number: number }) => pr.number),
