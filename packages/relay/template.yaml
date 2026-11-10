@@ -11,6 +11,15 @@ Parameters:
     Type: String
     Default: /plan,/fix,/shepherd
     Description: Comma-separated slash commands whose comments are stored.
+  PayloadDrop:
+    Type: String
+    Default: repository,organization
+    Description: Comma-separated top-level payload keys not stored (installation is always dropped). Empty keeps them.
+  PayloadMaxBytes:
+    Type: Number
+    Default: 1000000
+    MinValue: 0
+    Description: Largest pruned payload, in JSON bytes, to store. 0 stores envelopes only.
   BillingMode:
     Type: String
     Default: PROVISIONED
@@ -104,6 +113,8 @@ Resources:
           TABLE_NAME: !Ref Table
           WEBHOOK_SECRET: !Ref WebhookSecret
           COMMANDS: !Ref Commands
+          PAYLOAD_DROP: !Ref PayloadDrop
+          PAYLOAD_MAX_BYTES: !Ref PayloadMaxBytes
       # Placeholder only: the CLI uploads the real bundle with UpdateFunctionCode after every stack update.
       Code:
         ZipFile: |

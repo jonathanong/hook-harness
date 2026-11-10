@@ -2,6 +2,7 @@ import { PutCommand } from "@aws-sdk/lib-dynamodb";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { route } from "./handler.ts";
+import { unpackPayload } from "./payload.ts";
 import { ddb, deps, NOW, request, webhookEvent } from "./test-helpers/deps.ts";
 import { fixture } from "./test-helpers/fixture.ts";
 
@@ -32,7 +33,18 @@ describe("POST /webhook", () => {
       receivedAt: "2026-11-09T12:00:00.000Z",
       prs: [42],
     });
-    expect(input.Item!["envelope"]).not.toContain("SECRET");
+    const stored = unpackPayload(input.Item!["payload"]);
+    expect(stored).toMatchObject({ action: "dequeued" });
+    expect(stored).not.toHaveProperty("repository");
+    expect(stored).not.toHaveProperty("installation");
+  });
+
+  it("stores only the envelope when payloads are disabled", async () => {
+    const off = { ...deps, payload: { drop: [], maxBytes: 0 } };
+    await route(webhookEvent("push", fixture("push")), off);
+    const item = ddb.commandCalls(PutCommand)[0]!.args[0].input.Item!;
+    expect(item).toMatchObject({ payloadOmitted: "disabled" });
+    expect(item).not.toHaveProperty("payload");
   });
 
   it("verifies the signature over decoded base64 bytes", async () => {

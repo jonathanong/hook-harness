@@ -33,7 +33,7 @@ Decisions (user-confirmed unless marked):
 
 ### Envelope
 
-Signals only, plus what prompts need:
+A small envelope for filtering, plus the webhook payload:
 
 ```jsonc
 {
@@ -60,7 +60,7 @@ Signals only, plus what prompts need:
 }
 ```
 
-No titles, bodies, comment text or logs. Attacker-influenced strings (`headRef`, `workflow`, `sender.login`) are labelled as external data in prompts.
+The payload is stored gzipped alongside the envelope, minus `installation` (always) and the keys in `PayloadDrop` (default `repository,organization`). Payloads over `PayloadMaxBytes` (default 1 MB of JSON) or 350 KB gzipped are left out with `payloadOmitted: "too_large"`. `GET /events?payload=0` skips them, and a page stops filling at 5 MB to stay under the 6 MB response cap. Attacker-influenced strings (`headRef`, `workflow`, `sender.login`) are labelled as external data in prompts.
 
 Stored events: `pull_request` (lifecycle incl. `enqueued`/`dequeued`), review events, `issue_comment` (only when it carries an allowlisted command), `check_suite.completed`, `workflow_run.completed`, `status`, `merge_group`, default-branch `push`.
 
@@ -111,7 +111,7 @@ pr-shepherd integration is out of scope for now.
 | Host down                              | Events wait up to a day; `onGap` sweeps after longer outages                                 |
 | Missed webhook / 413                   | Best-effort; visible in App delivery log; scheduled sweeps cover ejections and main failures |
 | Comment-command abuse on a public repo | `authorAssociation` minimum per rule; command allowlist                                      |
-| Prompt injection via event strings     | Signals-only envelope; external-data labelling                                               |
+| Prompt injection via event strings     | Payload text is untrusted; `--no-payload`; external-data labelling                           |
 | Free-tier sharing in the AWS account   | On-demand switch; cost is cents either way                                                   |
 
 ## Verification

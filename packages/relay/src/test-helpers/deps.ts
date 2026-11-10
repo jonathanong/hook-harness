@@ -4,6 +4,7 @@ import { mockClient } from "aws-sdk-client-mock";
 
 import { db } from "../client.ts";
 
+import { parsePayloadConfig } from "../payload.ts";
 import type { Deps, UrlEvent } from "../types.ts";
 
 export const NOW = Date.parse("2026-11-09T12:00:00.000Z");
@@ -16,6 +17,7 @@ export const deps: Deps = {
   table: "T",
   secret: SECRET,
   commands: ["/plan", "/fix", "/shepherd"],
+  payload: parsePayloadConfig(undefined, undefined),
   now: () => NOW,
 };
 

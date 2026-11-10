@@ -24,10 +24,22 @@ describe("template.yaml", () => {
   it("declares the parameters", () => {
     const p = template.Parameters;
     expect(Object.keys(p).sort()).toEqual(
-      ["BillingMode", "Commands", "ReadCapacity", "WebhookSecret", "WriteCapacity"].sort(),
+      [
+        "BillingMode",
+        "Commands",
+        "PayloadDrop",
+        "PayloadMaxBytes",
+        "ReadCapacity",
+        "WebhookSecret",
+        "WriteCapacity",
+      ].sort(),
     );
     expect(p.WebhookSecret.NoEcho).toBe(true);
     expect(p.Commands.Default).toBe("/plan,/fix,/shepherd");
+    expect([p.PayloadDrop.Default, p.PayloadMaxBytes.Default]).toEqual([
+      "repository,organization",
+      1000000,
+    ]);
     expect(p.BillingMode.Default).toBe("PROVISIONED");
     expect([p.ReadCapacity.Default, p.WriteCapacity.Default]).toEqual([25, 25]);
   });
@@ -68,6 +80,8 @@ describe("template.yaml", () => {
     expect(f.Code.ZipFile).toContain("503");
     expect(Object.keys(f.Environment.Variables).sort()).toEqual([
       "COMMANDS",
+      "PAYLOAD_DROP",
+      "PAYLOAD_MAX_BYTES",
       "TABLE_NAME",
       "WEBHOOK_SECRET",
     ]);
