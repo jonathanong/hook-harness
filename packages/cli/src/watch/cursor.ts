@@ -6,7 +6,8 @@ export interface Cursor {
   seen: string[];
 }
 
-const MAX_SEEN = 200;
+// Covers a page of replayed overlap plus a full page (relay MAX_LIMIT is 500).
+const MAX_SEEN = 1000;
 /** The relay re-returns 60s before `after`; keep a margin. */
 const WINDOW_MS = 90_000;
 
