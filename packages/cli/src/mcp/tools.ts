@@ -36,7 +36,7 @@ export async function guarded(run: () => Promise<CallToolResult>): Promise<CallT
   }
 }
 
-/** Stateless unless `cursor_name` is given; `after` wins over the state file, then `since`, then now. */
+/** Stateless unless `cursor_name` is given; `after`, then `since`, then the state file, then now. */
 async function openToolSession(
   input: ScopeInput,
   ctx: Ctx,
@@ -44,7 +44,7 @@ async function openToolSession(
 ): Promise<Session> {
   const client = await resolveClient(ctx.env);
   const name = input.cursor_name;
-  const stored = !input.after && name ? await readCursor(ctx.env, name) : undefined;
+  const stored = !input.after && !input.since && name ? await readCursor(ctx.env, name) : undefined;
   return {
     source: relaySource(
       ctx,

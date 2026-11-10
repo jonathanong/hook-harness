@@ -30,7 +30,7 @@ Both return `{"events":[...],"gap":false,"cursor":"...","timedOut":true?}`. The 
 
 Rules:
 
-- **You own the cursor.** Persist the returned `cursor` (file, memory, task state) after handling events and pass it as `after` next time. Without `after`, the MCP tools start from `cursor_name`'s state file if given, then `since`, then now; the CLI uses its `default` state file (or `--cursor <name>`).
+- **You own the cursor.** Persist the returned `cursor` (file, memory, task state) after handling events and pass it as `after` next time. Without `after`, both start from `since` if given, then the named state file (MCP: only with `cursor_name`; CLI: `default` or `--cursor <name>`), then now.
 - **Dedupe on envelope `id`.** The same delivery can reappear across polls or as a replay.
 - **`gap: true`** means your cursor is older than the retention window and events were lost. Sweep the GitHub API (open PRs, recent runs, issues) to resync, handle `events` too, then continue from the returned `cursor`.
 - **Stay free.** `wait` blocks up to the timeout. Claude Code: run the CLI with Bash `run_in_background` or under Monitor, and keep the MCP tool's `timeout_seconds` under the client's tool-call limit (`MCP_TOOL_TIMEOUT` in Claude Code). Codex: use the equivalent background command or a separate session. Loop: wait, handle, persist cursor, wait again.

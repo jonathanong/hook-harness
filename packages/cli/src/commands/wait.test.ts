@@ -84,12 +84,15 @@ describe("wait resume precedence", () => {
     expect(decodeCursor((await readCursor(h.ctx.env, "agent"))!).sk).toBe("s2");
   });
 
-  it("uses the state file on the next run, ahead of --since", async () => {
-    const h = await watchHarness([page([ev("a", 1)], "s2"), page([ev("b", 2)], "s3")]);
+  it("uses the state file on the next run, but an explicit --since wins", async () => {
+    const pages = [page([ev("a", 1)], "s2"), page([ev("b", 2)], "s3"), page([ev("c", 3)], "s4")];
+    const h = await watchHarness(pages);
     await wait(["--owner", "o", "--settle", "0s"], h.ctx);
-    await wait(["--owner", "o", "--since", "2h", "--settle", "0s"], h.ctx);
+    await wait(["--owner", "o", "--settle", "0s"], h.ctx);
     expect(h.calls.urls[1]!.searchParams.get("after")).toBe("s2");
     expect(lastLine(h).events).toMatchObject([{ id: "b" }]);
+    await wait(["--owner", "o", "--since", "2h", "--settle", "0s"], h.ctx);
+    expect(h.calls.urls[2]!.searchParams.get("after")).not.toBe("s3");
   });
 
   it("--since accepts a duration or an ISO timestamp", async () => {

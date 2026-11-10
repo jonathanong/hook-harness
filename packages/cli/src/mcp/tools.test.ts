@@ -115,6 +115,13 @@ describe("wait_for_events", () => {
     expect(await readCursor(h.ctx.env, "default")).toBeUndefined();
   });
 
+  it("an explicit since beats the cursor_name state file", async () => {
+    const h = await start([page([ev("a", 1)], "s1"), page([ev("b", 2)], "s2")]);
+    await h.call("get_events", { owner: "o", cursor_name: "mcp" });
+    await h.call("get_events", { owner: "o", cursor_name: "mcp", since: "2h" });
+    expect(h.calls.urls[1]!.searchParams.get("after")).toBe(String(START - 7_200_000));
+  });
+
   it("starts from since (duration)", async () => {
     const h = await start([page([], "s")]);
     await h.call("wait_for_events", { owner: "o", since: "2h", timeout_seconds: 1 });
@@ -138,6 +145,13 @@ describe("wait_for_events", () => {
     await h.call("wait_for_events", { owner: "o", cursor_name: "mcp", settle_seconds: 0 });
     expect(h.calls.urls[1]!.searchParams.get("after")).toBe("s1");
     expect(await readCursor(h.ctx.env, "default")).toBeUndefined();
+  });
+
+  it("an explicit since beats the cursor_name state file", async () => {
+    const h = await start([page([ev("a", 1)], "s1"), page([ev("b", 2)], "s2")]);
+    await h.call("get_events", { owner: "o", cursor_name: "mcp" });
+    await h.call("get_events", { owner: "o", cursor_name: "mcp", since: "2h" });
+    expect(h.calls.urls[1]!.searchParams.get("after")).toBe(String(START - 7_200_000));
   });
 });
 

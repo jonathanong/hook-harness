@@ -38,9 +38,13 @@ export function startFrom(
   return { sk: String(since ? parseSince(since, nowMs) : nowMs), seen: [] };
 }
 
-/** Precedence: `--after` > `--cursor` state file > `--since` > now. */
+/**
+ * Precedence: `--after` > `--since` > `--cursor` state file > now. An explicit start point beats
+ * the implicit state file, which another caller may have left behind.
+ */
 async function startCursor(values: Values, ctx: Ctx, name: string): Promise<Cursor> {
-  const encoded = str(values, "after") || (await readCursor(ctx.env, name));
+  const since = str(values, "since");
+  const encoded = str(values, "after") || (since ? undefined : await readCursor(ctx.env, name));
   return startFrom(encoded, str(values, "since"), ctx);
 }
 

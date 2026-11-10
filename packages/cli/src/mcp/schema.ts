@@ -45,7 +45,7 @@ const scope = {
     .string()
     .optional()
     .describe(
-      "Opt in to the CLI's named cursor state file: used when `after` is absent and updated " +
+      "Opt in to the CLI's named cursor state file: used when `after` and `since` are absent and updated " +
         "after each call. Omit to stay stateless (recommended).",
     ),
 };
