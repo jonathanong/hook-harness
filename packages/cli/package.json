@@ -1,6 +1,6 @@
 {
   "name": "hook-harness",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "hook-harness CLI: deploy, update, teardown, status, tokens, and the runner service.",
   "keywords": [
     "agents",
