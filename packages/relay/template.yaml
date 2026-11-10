@@ -1,0 +1,140 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: hook-harness relay - webhook Lambda function URL backed by a DynamoDB table.
+
+Parameters:
+  WebhookSecret:
+    Type: String
+    NoEcho: true
+    MinLength: 1
+    Description: Secret configured on the webhook sender, used to verify X-Hub-Signature-256.
+  Commands:
+    Type: String
+    Default: /plan,/fix,/shepherd
+    Description: Comma-separated slash commands whose comments are stored.
+  BillingMode:
+    Type: String
+    Default: PROVISIONED
+    AllowedValues: [PROVISIONED, PAY_PER_REQUEST]
+  ReadCapacity:
+    Type: Number
+    Default: 25
+    MinValue: 1
+  WriteCapacity:
+    Type: Number
+    Default: 25
+    MinValue: 1
+
+Conditions:
+  IsProvisioned: !Equals [!Ref BillingMode, PROVISIONED]
+
+Resources:
+  Table:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${AWS::StackName}-events"
+      BillingMode: !Ref BillingMode
+      ProvisionedThroughput: !If
+        - IsProvisioned
+        - ReadCapacityUnits: !Ref ReadCapacity
+          WriteCapacityUnits: !Ref WriteCapacity
+        - !Ref AWS::NoValue
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: false
+
+  FunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: table-access
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:Query
+                Resource: !GetAtt Table.Arn
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-relay"
+      RetentionInDays: 1
+
+  Function:
+    Type: AWS::Lambda::Function
+    DependsOn: LogGroup
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-relay"
+      Runtime: nodejs24.x
+      Architectures: [arm64]
+      MemorySize: 256
+      Timeout: 10
+      Handler: index.handler
+      Role: !GetAtt FunctionRole.Arn
+      LoggingConfig:
+        LogFormat: JSON
+        SystemLogLevel: WARN
+        ApplicationLogLevel: INFO
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref Table
+          WEBHOOK_SECRET: !Ref WebhookSecret
+          COMMANDS: !Ref Commands
+      # Placeholder only: the CLI uploads the real bundle with UpdateFunctionCode after every stack update.
+      Code:
+        ZipFile: |
+          exports.handler = async () => ({ statusCode: 503, body: "not deployed" });
+
+  FunctionUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      TargetFunctionArn: !GetAtt Function.Arn
+      AuthType: NONE
+
+  UrlInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref Function
+      Action: lambda:InvokeFunctionUrl
+      Principal: "*"
+      FunctionUrlAuthType: NONE
+
+  InvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref Function
+      Action: lambda:InvokeFunction
+      Principal: "*"
+      InvokedViaFunctionUrl: true
+
+Outputs:
+  FunctionUrl:
+    Value: !GetAtt FunctionUrl.FunctionUrl
+  FunctionName:
+    Value: !Ref Function
+  TableName:
+    Value: !Ref Table
