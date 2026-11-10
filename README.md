@@ -20,6 +20,21 @@ pnpm add -g hook-harness         # or install globally, then: hook-harness <comm
 
 Requires Node 24+. The package bundles the relay Lambda code and CloudFormation template that `deploy` and `update` use. Publishing is described in [docs/publishing.md](docs/publishing.md).
 
+## Install the plugin
+
+The plugin gives an agent the `hook-harness mcp` server (`wait_for_events`, `get_events`) and a `hook-harness` skill that teaches it to log in, wait with a caller-owned cursor, write filters and treat payloads as untrusted.
+
+```bash
+# Claude Code
+/plugin marketplace add jonathanong/hook-harness   # inside Claude Code
+/plugin install hook-harness@hook-harness
+
+# Codex (then enable the hook-harness plugin)
+codex plugin marketplace add jonathanong/hook-harness
+```
+
+The MCP server runs `npx -y hook-harness mcp`. Log in once with `hook-harness login` (see [docs/github-app.md](docs/github-app.md) for tokens). Optional: `hook-harness serve` runs a local SSE daemon.
+
 ## Sharing one poller: `hook-harness serve`
 
 Several agents on one machine can share a single relay poller. `serve` polls the relay once and fans events out over Server-Sent Events; `wait` and `tail` read from it with `--source` (or `HOOK_HARNESS_SOURCE`) and print exactly what they print when polling the relay.

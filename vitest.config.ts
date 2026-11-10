@@ -2,7 +2,7 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    include: ["packages/*/src/**/*.test.ts"],
+    include: ["packages/*/src/**/*.test.ts", "plugins/**/*.test.ts"],
     reporters: process.env.CI ? ["default", "junit"] : ["default"],
     outputFile: process.env.CI ? { junit: "./test-results/junit.xml" } : {},
     coverage: {

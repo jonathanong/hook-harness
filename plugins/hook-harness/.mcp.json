@@ -1,0 +1,6 @@
+{
+  "hook-harness": {
+    "command": "npx",
+    "args": ["-y", "hook-harness", "mcp"]
+  }
+}
