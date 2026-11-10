@@ -64,7 +64,7 @@ describe("status", () => {
     expect(text).toContain("FunctionName: hook-harness-fn");
     expect(text).toContain("Function last modified: 2026-11-08");
     expect(text).toContain("-> 401");
-    expect(h.fetched).toEqual(["https://abc.lambda-url.us-east-1.on.aws/events?repo=x/y"]);
+    expect(h.fetched).toEqual(["https://abc.lambda-url.us-east-1.on.aws/events?owner=x"]);
   });
 
   it("fails the smoke check on an unexpected status", async () => {

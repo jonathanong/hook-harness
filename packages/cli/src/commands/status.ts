@@ -7,13 +7,13 @@ import { connect, withSlash } from "./common.ts";
 const HELP = `hook-harness status [flags]
 
 Shows stack status and outputs, the function's last-modified time, and checks that the function
-is live by calling GET <url>events without a token (expects 401).
+is live by calling GET <url>events?owner=x without a token (expects 401).
 
 ${COMMON_HELP}`;
 
 async function smokeCheck(ctx: Ctx, functionUrl: string): Promise<boolean> {
   try {
-    const response = await ctx.fetch(`${withSlash(functionUrl)}events?repo=x/y`);
+    const response = await ctx.fetch(`${withSlash(functionUrl)}events?owner=x`);
     ctx.out(`Smoke check: GET events without a token -> ${response.status} (expected 401)`);
     return response.status === 401;
   } catch (error) {

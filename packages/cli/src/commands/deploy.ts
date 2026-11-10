@@ -14,7 +14,11 @@ const FLAGS = `Flags:
   --billing-mode <mode>       PROVISIONED (default) or PAY_PER_REQUEST
   --read-capacity <n>         Provisioned read units
   --write-capacity <n>        Provisioned write units
-  --commands <list>           Comma-separated comment commands (default /plan,/fix,/shepherd)`;
+  --commands <list>           Comma-separated comment commands (default /plan,/fix,/shepherd)
+  --payload-drop <keys>       Top-level payload keys not stored (default repository,organization;
+                              "" keeps them; installation is always dropped)
+  --payload-max-bytes <n>     Largest stored payload in bytes; 0 stores envelopes only
+Parameters not passed keep their previous values on update.`;
 
 const DEPLOY_HELP = `hook-harness deploy [flags]
 

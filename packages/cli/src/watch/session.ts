@@ -53,7 +53,12 @@ export async function openSession(
   const client = await resolveClient(ctx.env);
   const cursor = await startCursor(values, ctx, name);
   return {
-    source: relaySource(ctx, client, { owner, repos: list(values, "repo") }, intervalMs),
+    source: relaySource(
+      ctx,
+      client,
+      { owner, repos: list(values, "repo"), payload: values["no-payload"] !== true },
+      intervalMs,
+    ),
     filters,
     cursor,
     intervalMs,

@@ -11,6 +11,7 @@ export class AuthError extends Error {}
 export interface Query {
   owner: string;
   repos: string[];
+  payload: boolean;
 }
 
 const MAX_BACKOFF_MS = 5 * 60_000;
@@ -26,6 +27,7 @@ async function fetchPage(
   if (query.repos.length > 0) params.set("repos", query.repos.join(","));
   params.set("after", after);
   params.set("limit", String(limit));
+  if (!query.payload) params.set("payload", "0");
   const response = await ctx.fetch(`${withSlash(client.url)}events?${params}`, {
     headers: { authorization: `Bearer ${client.token}` },
     signal: ctx.signal,

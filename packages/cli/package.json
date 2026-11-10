@@ -16,6 +16,7 @@
     "@hook-harness/protocol": "workspace:*"
   },
   "devDependencies": {
+    "@hook-harness/relay": "workspace:*",
     "aws-sdk-client-mock": "4.1.0"
   },
   "engines": {

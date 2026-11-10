@@ -203,6 +203,9 @@ importers:
         specifier: workspace:*
         version: link:../protocol
     devDependencies:
+      '@hook-harness/relay':
+        specifier: workspace:*
+        version: link:../relay
       aws-sdk-client-mock:
         specifier: 4.1.0
         version: 4.1.0

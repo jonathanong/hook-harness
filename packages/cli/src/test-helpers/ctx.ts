@@ -1,6 +1,7 @@
 import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   CloudFormationClient,
   CreateStackCommand,
@@ -14,6 +15,10 @@ import { mockClient } from "aws-sdk-client-mock";
 
 import { createClients } from "../aws/clients.ts";
 import type { Ctx } from "../types.ts";
+
+export const REAL_TEMPLATE = fileURLToPath(
+  new URL("../../../relay/template.yaml", import.meta.url),
+);
 
 export const cfnMock = mockClient(CloudFormationClient);
 export const lambdaMock = mockClient(LambdaClient);
@@ -34,7 +39,6 @@ export interface Harness {
 export async function harness(over: Partial<Ctx> = {}): Promise<Harness> {
   const dir = await mkdtemp(join(tmpdir(), "hh-cli-"));
   await mkdir(join(dir, "dist"));
-  await writeFile(join(dir, "template.yaml"), "Resources: {}\n");
   await writeFile(join(dir, "dist", "index.mjs"), "export const handler = () => {};\n");
   const out: string[] = [];
   const err: string[] = [];
@@ -58,7 +62,7 @@ export async function harness(over: Partial<Ctx> = {}): Promise<Harness> {
     },
     signal: controller.signal,
     maxWaitSeconds: 60,
-    paths: { template: join(dir, "template.yaml"), bundle: join(dir, "dist", "index.mjs") },
+    paths: { template: REAL_TEMPLATE, bundle: join(dir, "dist", "index.mjs") },
     ...over,
   };
   return { ctx, out, err, dir, fetched, clock, abort: () => controller.abort() };

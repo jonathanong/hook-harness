@@ -16,7 +16,7 @@ export interface TokenItem {
   label: string;
 }
 
-// TODO: replace with `tokenHash` from `@hook-harness/relay/keys` once it exists.
+/** Same digest as `tokenHash` in the relay (asserted equal in tests). */
 export function sha256Hex(value: string): string {
   return createHash("sha256").update(value).digest("hex");
 }
