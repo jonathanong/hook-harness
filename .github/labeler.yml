@@ -1,0 +1,31 @@
+protocol:
+  - changed-files:
+      - any-glob-to-any-file: "packages/protocol/**"
+
+relay:
+  - changed-files:
+      - any-glob-to-any-file: "packages/relay/**"
+
+cli:
+  - changed-files:
+      - any-glob-to-any-file: "packages/cli/**"
+
+docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "docs/**"
+          - "README.md"
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file: ".github/**"
+
+config:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "package.json"
+          - "pnpm-workspace.yaml"
+          - "tsconfig.json"
+          - "vitest.config.*"
+          - ".oxlintrc.json"
+          - ".oxfmtrc.json"
