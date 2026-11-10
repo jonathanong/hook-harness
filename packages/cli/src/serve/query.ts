@@ -1,0 +1,26 @@
+import type { EventFilter } from "@hook-harness/protocol";
+
+import type { Values } from "../args.ts";
+import { buildFilters, withRepos } from "../watch/flags.ts";
+
+const REPEATED = ["event", "action", "reason", "conclusion", "branch", "workflow", "command", "pr"];
+
+/**
+ * Query params mirror `wait`'s flags and reuse its filter builder. `filter` is repeatable
+ * EventFilter JSON; every filter (the param-built one plus each `filter`) is OR'd.
+ * Throws `UsageError` for a bad `pr` or `filter`.
+ */
+export function filtersFromQuery(params: URLSearchParams): EventFilter[] {
+  const values: Values = {};
+  for (const key of [...REPEATED, "ignoreSender", "filter"]) {
+    const found = params.getAll(key);
+    if (found.length > 0) values[key === "ignoreSender" ? "ignore-sender" : key] = found;
+  }
+  const association = params.get("minAssociation");
+  if (association) values["min-association"] = association;
+  const repos = params
+    .getAll("repo")
+    .flatMap((repo) => repo.split(","))
+    .filter(Boolean);
+  return withRepos(buildFilters(values), repos);
+}

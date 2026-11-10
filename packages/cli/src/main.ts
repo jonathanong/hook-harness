@@ -2,6 +2,7 @@ import { UsageError } from "./args.ts";
 import { deploy, update } from "./commands/deploy.ts";
 import { login } from "./commands/login.ts";
 import { mcp } from "./mcp/command.ts";
+import { serve } from "./commands/serve.ts";
 import { status } from "./commands/status.ts";
 import { tail } from "./commands/tail.ts";
 import { teardown } from "./commands/teardown.ts";
@@ -20,6 +21,7 @@ export const builtinCommands: Record<string, Command> = {
   wait,
   tail,
   mcp,
+  serve,
 };
 
 export const USAGE = `hook-harness <command> [flags]
@@ -33,6 +35,8 @@ Commands:
   login       Save the relay URL and token for wait/tail
   wait        Block until matching events arrive, print one JSON object (primary interface)
   tail        Stream matching events as NDJSON (primary interface)
+  serve       Local daemon: poll once, fan events out over SSE (wait/tail --source)
+  mcp         Stdio MCP server with wait_for_events / get_events tools
 
 Run \`hook-harness <command> --help\` for flags.`;
 

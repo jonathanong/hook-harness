@@ -124,6 +124,10 @@ Each event has a small envelope for filtering, plus the webhook payload:
 - `GET /events?payload=0` skips them (`payloadOmitted: "not_requested"`).
 - Payload text, and attacker-influenced envelope strings (`headRef`, `workflow`, `sender.login`), are untrusted input.
 
+## Local fan-out (`serve`)
+
+The relay stays store-and-poll. On one machine, `hook-harness serve` is the only thing that polls it: it keeps a bounded in-memory ring buffer (1000 events or 1 hour) and streams events to local clients over SSE with per-client filters, `Last-Event-ID` replay and an explicit `gap` event. `wait`/`tail --source <url>` are a second `EventSource` implementation over that stream, so filtering, settle and cursors are unchanged. Loopback only by default; non-loopback needs `--allow-remote` plus a bearer token. The SSE `id` is an encoded cursor (relay sort key plus delivery id), so cursors printed by `wait`/`tail` are interchangeable between relay and `serve` sources.
+
 ## CLI
 
 `packages/cli` publishes the `hook-harness` npm package.

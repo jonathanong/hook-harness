@@ -16,6 +16,11 @@ export interface Query {
 
 const MAX_BACKOFF_MS = 5 * 60_000;
 
+/** Capped exponential backoff shared by every source. */
+export function backoffMs(intervalMs: number, failures: number): number {
+  return Math.min(intervalMs * 2 ** failures, MAX_BACKOFF_MS);
+}
+
 async function fetchPage(
   ctx: Ctx,
   client: ClientConfig,
@@ -66,7 +71,7 @@ export function relaySource(
           if (error instanceof AuthError) throw error;
           failures += 1;
           result = { error: error as Error };
-          wait = Math.min(intervalMs * 2 ** failures, MAX_BACKOFF_MS);
+          wait = backoffMs(intervalMs, failures);
         }
         yield result;
         // Asked after the consumer handled the result, so it can shorten the sleep.
