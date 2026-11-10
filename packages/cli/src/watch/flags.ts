@@ -36,7 +36,7 @@ export const WATCH_FLAGS = `Scope:
 
 Filters (one filter from these flags; events matching ANY filter are kept; none = all events):
   --on <preset>            Add a preset filter (repeatable or comma list): ejection (merge-queue
-                           ejection, not a merge), main-failure (failed workflow run on main),
+                           ejection, not a merge), main-failure (failed workflow run or check suite on main),
                            dependabot-pr (new Dependabot PR), review-requested[:<login|team>],
                            label:<name> (label added to an issue or PR), /<command> (new comment)
   --event --action --reason --conclusion --branch --workflow --command --sender --label

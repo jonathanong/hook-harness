@@ -14,10 +14,13 @@ describe("presets", () => {
     expect(on("ejection", { ...dequeued, reason: "MANUAL" })).toBe(false);
   });
 
-  it("main-failure matches a failed workflow run on main only", () => {
+  it("main-failure matches a failed workflow run or check suite on main only", () => {
     const run = { event: "workflow_run", action: "completed", conclusion: "failure" };
     expect(on("main-failure", { ...run, headRef: "main" })).toBe(true);
     expect(on("main-failure", { ...run, headRef: "feature" })).toBe(false);
+    const suite = { ...run, event: "check_suite", headRef: "main" };
+    expect(on("main-failure", suite)).toBe(true);
+    expect(on("main-failure", { ...suite, conclusion: "success" })).toBe(false);
   });
 
   it("dependabot-pr matches a PR Dependabot opened", () => {
