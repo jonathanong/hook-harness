@@ -1,8 +1,12 @@
 name: Publish
 
+# A merged version bump in packages/cli/package.json is the release: publish to npm, then tag and
+# create the GitHub release. Re-running is safe; steps already done are skipped.
 on:
-  release:
-    types: [published]
+  push:
+    branches: [main]
+    paths: [packages/cli/package.json]
+  workflow_dispatch:
 
 concurrency:
   group: publish
@@ -17,7 +21,7 @@ jobs:
     runs-on: ubuntu-slim
     timeout-minutes: 15
     permissions:
-      contents: read
+      contents: write # tag and GitHub release
       id-token: write # npm trusted publishing (OIDC); no NPM_TOKEN
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -28,18 +32,31 @@ jobs:
           cache: pnpm
       # Trusted publishing needs npm >= 11.5.1. pnpm publish can't attach provenance here, so npm publishes.
       - run: npm install -g npm@12.2.2
-      - name: Release tag matches package version
+      - name: What is left to do
+        id: state
         env:
-          TAG: ${{ github.event.release.tag_name }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           version="$(node -p "require('./packages/cli/package.json').version")"
-          if [ "$TAG" != "v$version" ]; then
-            echo "::error::release tag $TAG does not match packages/cli version v$version"
-            exit 1
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if npm view "hook-harness@$version" version >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
           fi
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm check
-      - run: pnpm build
+          if gh release view "v$version" >/dev/null 2>&1; then
+            echo "released=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.state.outputs.published != 'true'
+        run: pnpm install --frozen-lockfile
+      - if: steps.state.outputs.published != 'true'
+        run: pnpm check
+      - if: steps.state.outputs.published != 'true'
+        run: pnpm build
       # dist/ is fully bundled and there are no runtime dependencies, so npm can publish it as is.
-      - run: npm publish
+      - if: steps.state.outputs.published != 'true'
+        run: npm publish
         working-directory: packages/cli
+      - if: steps.state.outputs.released != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.state.outputs.version }}
+        run: gh release create "v$VERSION" --target "$GITHUB_SHA" --generate-notes

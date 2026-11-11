@@ -45,16 +45,19 @@ A bootstrap publish has no provenance attestation; later releases do.
 
 ## Releasing
 
-1. Bump `version` in `packages/cli/package.json`, merge to `main`.
-2. Create a GitHub release with tag `v<version>` (for example `v0.1.1`) and publish it.
-3. The workflow checks the tag matches the package version, runs `pnpm check` and `pnpm build`,
-   and runs `npm publish` in `packages/cli` with provenance. It installs npm 12 first because OIDC
-   publishing requires npm 11.5.1 or newer. (`pnpm publish` can't attach provenance in this setup.)
-4. The release is live as `latest` once the job finishes; `npm view hook-harness version` can lag
-   by a minute or two.
+1. Bump `version` in `packages/cli/package.json` (and the plugin manifests) and merge to `main`.
+   That merge is the release; there is no manual step.
+2. `publish.yml` runs on any push to `main` that touches `packages/cli/package.json`. If npm
+   doesn't have that version yet, it runs `pnpm check` and `pnpm build`, then `npm publish` with
+   provenance. It installs npm 12 first because OIDC publishing requires npm 11.5.1 or newer.
+   (`pnpm publish` can't attach provenance in this setup.)
+3. If there is no `v<version>` GitHub release yet, it creates one on that commit with generated
+   notes.
+4. Steps already done are skipped, so a re-run (or `workflow_dispatch`) after a partial failure
+   finishes the job, and package.json changes that don't bump the version do nothing.
+5. `npm view hook-harness version` can lag by a minute or two.
 
-Version `0.1.0` is already set; the first release tag is `v0.1.0`. A version can be published
-only once, so if Option B published `0.1.0`, bump before the first CI release.
+The relay is not part of this: deploy it with `hook-harness update` after relay changes merge.
 
 ## Verify an install
 
