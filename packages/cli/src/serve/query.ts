@@ -16,6 +16,7 @@ const REPEATED = [
   "reviewer",
   "sha",
   "ref",
+  "app",
   "on",
   "pr",
 ];
@@ -27,9 +28,13 @@ const REPEATED = [
  */
 export function filtersFromQuery(params: URLSearchParams): EventFilter[] {
   const values: Values = {};
-  for (const key of [...REPEATED, "ignoreSender", "filter"]) {
+  const renamed: Record<string, string> = {
+    ignoreSender: "ignore-sender",
+    ignoreApp: "ignore-app",
+  };
+  for (const key of [...REPEATED, "ignoreSender", "ignoreApp", "filter"]) {
     const found = params.getAll(key);
-    if (found.length > 0) values[key === "ignoreSender" ? "ignore-sender" : key] = found;
+    if (found.length > 0) values[renamed[key] ?? key] = found;
   }
   const association = params.get("minAssociation");
   if (association) values["min-association"] = association;

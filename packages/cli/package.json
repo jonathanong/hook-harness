@@ -1,6 +1,6 @@
 {
   "name": "hook-harness",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "GitHub events in, agent runs out: deploy the relay, then wait, tail, serve or mcp.",
   "keywords": [
     "agents",

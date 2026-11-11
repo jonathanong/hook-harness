@@ -100,4 +100,15 @@ describe("matches", () => {
       true,
     );
   });
+
+  it("matches and ignores check suites by App", () => {
+    const suite = emptyEnvelope({ ...base, event: "check_suite", app: "codecov" });
+    const push = emptyEnvelope({ ...base, event: "push" });
+    expect(matches(suite, { app: "codecov" })).toBe(true);
+    expect(matches(suite, { app: ["github-actions"] })).toBe(false);
+    expect(matches(push, { app: "codecov" })).toBe(false);
+    expect(matches(suite, { ignoreApps: ["codecov"] })).toBe(false);
+    expect(matches(suite, { ignoreApps: ["github-actions"] })).toBe(true);
+    expect(matches(push, { ignoreApps: ["codecov"] })).toBe(true);
+  });
 });

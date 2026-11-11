@@ -19,7 +19,8 @@ describe("filtersFromQuery", () => {
     expect(
       filters(
         "event=pull_request&event=push&action=opened&branch=main&command=/plan&reason=CI_FAILURE" +
-          "&conclusion=failure&workflow=ci&pr=4&pr=5&minAssociation=MEMBER&ignoreSender=bot",
+          "&conclusion=failure&workflow=ci&pr=4&pr=5&minAssociation=MEMBER&ignoreSender=bot" +
+          "&app=codecov&ignoreApp=github-actions",
       ),
     ).toEqual([
       {
@@ -31,8 +32,10 @@ describe("filtersFromQuery", () => {
         conclusion: ["failure"],
         workflow: ["ci"],
         pr: [4, 5],
+        app: ["codecov"],
         minAssociation: "MEMBER",
         ignoreSenders: ["bot"],
+        ignoreApps: ["github-actions"],
       },
     ]);
   });

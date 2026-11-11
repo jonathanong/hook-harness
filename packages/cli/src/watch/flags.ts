@@ -17,10 +17,12 @@ export const WATCH_SPEC = {
   reviewer: { type: "string", multiple: true },
   sha: { type: "string", multiple: true },
   ref: { type: "string", multiple: true },
+  app: { type: "string", multiple: true },
   on: { type: "string", multiple: true },
   pr: { type: "string", multiple: true },
   "min-association": { type: "string" },
   "ignore-sender": { type: "string", multiple: true },
+  "ignore-app": { type: "string", multiple: true },
   filter: { type: "string", multiple: true },
   "no-payload": { type: "boolean" },
   source: { type: "string" },
@@ -38,16 +40,19 @@ export const WATCH_FLAGS = `Scope:
 
 Filters (one filter from these flags; events matching ANY filter are kept; none = all events):
   --on <preset>            Add a preset filter (repeatable or comma list): ejection (merge-queue
-                           ejection, not a merge), main-failure (failed workflow run or check suite on main),
+                           ejection, not a merge), main-failure (failed workflow run, or another App's check suite, on main),
                            dependabot-pr (new Dependabot PR), review-requested[:<login|team>],
                            label:<name> (label added to an issue or PR), /<command> (new comment)
   --event --action --reason --conclusion --branch --workflow --command --sender --label
-  --reviewer --sha --ref --pr
+  --reviewer --sha --ref --app --pr
                            Repeatable or comma lists
   --min-association <a>    Minimum author association, e.g. MEMBER. Every comment is stored, so
                            filter with --command /plan etc. GitHub reports private org members as
                            CONTRIBUTOR/NONE: use this carefully or verify membership via the API.
   --ignore-sender <login>  Drop events from these logins (repeatable)
+  --ignore-app <slug>      Drop check suites from these Apps, e.g. github-actions (repeatable).
+                           Like --ignore-sender, it applies to the filter built from flags,
+                           not to --on presets or --filter JSON (put "ignoreApps" there)
   --filter '<json>'        An EventFilter as JSON; repeatable, each is another filter
 
 Payloads:
@@ -87,6 +92,7 @@ const STRING_FIELDS = [
   "reviewer",
   "sha",
   "ref",
+  "app",
 ];
 
 /** Raw repeated values, not comma-split (JSON contains commas). */
@@ -124,6 +130,8 @@ export function buildFilters(values: Values): EventFilter[] {
   if (typeof association === "string") flagFilter.minAssociation = association;
   const ignored = list(values, "ignore-sender");
   if (ignored.length > 0) flagFilter.ignoreSenders = ignored;
+  const ignoredApps = list(values, "ignore-app");
+  if (ignoredApps.length > 0) flagFilter.ignoreApps = ignoredApps;
   const filters = Object.keys(flagFilter).length > 0 ? [flagFilter as EventFilter] : [];
   const presets = list(values, "on").map((name) => {
     const found = preset(name);

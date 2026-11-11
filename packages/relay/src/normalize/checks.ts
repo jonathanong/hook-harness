@@ -8,6 +8,8 @@ export const checkSuite: Normalizer = (payload, ctx) => {
     headSha: suite.head_sha,
     headRef: suite.head_branch,
     conclusion: suite.conclusion,
+    app: suite.app.slug,
+    checkSuiteId: suite.id,
     url: commitUrl(payload, suite.head_sha),
   });
 };

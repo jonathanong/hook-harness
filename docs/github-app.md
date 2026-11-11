@@ -65,6 +65,8 @@ An event checkbox only appears once you grant the matching permission above.
 
 The relay stores every event and action the App sends; this subscription list is the only filter, and agents filter the rest. Each extra event costs a Lambda invocation and a DynamoDB write, so only subscribe to events an agent will use. Events without an owning account (e.g. Security advisory, which comes from the global advisory database) are dropped.
 
+The `main-failure` preset needs both Check suite and Workflow run: it takes GitHub Actions failures from `workflow_run` and skips Actions' own check suites (`app` `github-actions`). With Check suite only, use `--filter '{"event":"check_suite","action":"completed","conclusion":"failure","branch":"main"}'` instead. Check suites stored by a relay older than 0.3.5 have no `app`, so `app` filters skip them and `ignoreApps` lets them through.
+
 ### Private key
 
 Not needed. The relay authenticates webhooks with the shared secret and never calls the GitHub API.

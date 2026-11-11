@@ -15,7 +15,9 @@ export const FILTER_HELP = `EventFilter fields (all optional; each is a string o
   reviewer     requested reviewer login or team slug (action review_requested)
   sha          commit SHA (headSha): PR head, merge-group head, check suite, status, push
   ref          branch name matching either headRef or baseRef (branch picks one by event)
+  app          check suite App slug: github-actions, codecov, ...
   ignoreSenders   array of logins whose events never match
+  ignoreApps      array of App slugs whose check suites never match
 
 Presets (\`on\` input; CLI --on): ejection, main-failure, dependabot-pr, review-requested,
 review-requested:<login|team>, label:<name>, /<command>. They are OR'd with \`filters\`.
