@@ -1,6 +1,6 @@
 {
   "name": "hook-harness",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Consume GitHub events (merge-queue ejections, failed CI, slash commands) from Codex.",
   "author": {
     "name": "Jonathan Ong",
