@@ -19,6 +19,8 @@ export const eventFilter = z
     sender: strings.optional().describe("sender login, e.g. dependabot[bot]"),
     label: strings.optional().describe("label added/removed; pair with action labeled"),
     reviewer: strings.optional().describe("requested reviewer login or team slug"),
+    sha: strings.optional().describe("commit SHA; matches headSha"),
+    ref: strings.optional().describe("branch; matches headRef or baseRef"),
     ignoreSenders: z.array(z.string()).optional().describe("logins whose events never match"),
   })
   .describe("Each field matches when the envelope value equals it or is one of the array values.");

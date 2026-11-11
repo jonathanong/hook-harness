@@ -73,6 +73,24 @@ describe("matches", () => {
     expect(matches(dequeued, { pr: [1, 2] })).toBe(false);
   });
 
+  it("matches sha against headSha and ref against headRef or baseRef", () => {
+    const pr = emptyEnvelope({
+      ...base,
+      event: "pull_request",
+      headSha: "abc",
+      headRef: "feat",
+      baseRef: "main",
+    });
+    expect(matches(pr, { sha: "abc" })).toBe(true);
+    expect(matches(pr, { sha: ["def"] })).toBe(false);
+    expect(matches(pr, { ref: "feat" })).toBe(true);
+    expect(matches(pr, { ref: ["main"] })).toBe(true);
+    expect(matches(pr, { ref: "other" })).toBe(false);
+    expect(matches(emptyEnvelope({ ...base, event: "status" }), { sha: "abc", ref: "x" })).toBe(
+      false,
+    );
+  });
+
   it("applies association and sender filters", () => {
     expect(matches(dequeued, { minAssociation: "OWNER" })).toBe(false);
     expect(matches(dequeued, { minAssociation: "COLLABORATOR" })).toBe(true);

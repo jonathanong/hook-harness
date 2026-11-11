@@ -64,6 +64,10 @@ export interface EventFilter {
   label?: string | string[];
   /** Requested reviewer login or team slug; pair with action `review_requested`. */
   reviewer?: string | string[];
+  /** Commit SHA; matches `headSha` (PR head, merge-group head, check suite, status, push). */
+  sha?: string | string[];
+  /** Branch name; matches when either `headRef` or `baseRef` equals it (unlike `branch`). */
+  ref?: string | string[];
   /** Sender login(s), e.g. `dependabot[bot]`. */
   sender?: string | string[];
   /** Logins whose events never match. */

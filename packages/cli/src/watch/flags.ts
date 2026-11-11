@@ -15,6 +15,8 @@ export const WATCH_SPEC = {
   sender: { type: "string", multiple: true },
   label: { type: "string", multiple: true },
   reviewer: { type: "string", multiple: true },
+  sha: { type: "string", multiple: true },
+  ref: { type: "string", multiple: true },
   on: { type: "string", multiple: true },
   pr: { type: "string", multiple: true },
   "min-association": { type: "string" },
@@ -40,7 +42,7 @@ Filters (one filter from these flags; events matching ANY filter are kept; none 
                            dependabot-pr (new Dependabot PR), review-requested[:<login|team>],
                            label:<name> (label added to an issue or PR), /<command> (new comment)
   --event --action --reason --conclusion --branch --workflow --command --sender --label
-  --reviewer --pr
+  --reviewer --sha --ref --pr
                            Repeatable or comma lists
   --min-association <a>    Minimum author association, e.g. MEMBER. Every comment is stored, so
                            filter with --command /plan etc. GitHub reports private org members as
@@ -83,6 +85,8 @@ const STRING_FIELDS = [
   "sender",
   "label",
   "reviewer",
+  "sha",
+  "ref",
 ];
 
 /** Raw repeated values, not comma-split (JSON contains commas). */

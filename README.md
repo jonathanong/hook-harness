@@ -54,7 +54,7 @@ The MCP server runs `npx -y hook-harness mcp`. Log in once with `hook-harness lo
 hook-harness wait --owner acme --on ejection,main-failure,dependabot-pr,/shepherd --on label:needs-review --no-payload
 ```
 
-Field flags (`--event --action --reason --conclusion --branch --workflow --command --sender --label --reviewer --pr`) build one more filter; `--filter '<json>'` adds arbitrary ones.
+Field flags (`--event --action --reason --conclusion --branch --workflow --command --sender --label --reviewer --sha --ref --pr`) build one more filter; `--filter '<json>'` adds arbitrary ones.
 
 ## Sharing one poller: `hook-harness serve`
 
@@ -66,7 +66,7 @@ hook-harness wait --source http://127.0.0.1:7391 --event pull_request --command 
 curl -N 'http://127.0.0.1:7391/events?event=push&branch=main'
 ```
 
-- `GET /events` streams `id: <cursor>`, `event: envelope`, `data: <envelope JSON>`. Query params filter per client with the same semantics as `wait`'s flags: `event action repo branch command reason conclusion workflow sender on pr minAssociation ignoreSender`, plus repeatable `filter=<EventFilter JSON>`; all filters are OR'd.
+- `GET /events` streams `id: <cursor>`, `event: envelope`, `data: <envelope JSON>`. Query params filter per client with the same semantics as `wait`'s flags: `event action repo branch command reason conclusion workflow sender label reviewer sha ref on pr minAssociation ignoreSender`, plus repeatable `filter=<EventFilter JSON>`; all filters are OR'd.
 - `Last-Event-ID` (or `?after=`) replays matching events from an in-memory ring buffer (last 1000 events or 1 hour, whichever is smaller). A position older than the buffer gets `event: gap` with `{"cursor":"..."}`, then the stream continues live. `: ping` comments go out every 15s. Clients that fall too far behind are disconnected.
 - `GET /healthz` returns `{ok, upstream: {lastPollAt, lastError, cursor}, clients, buffered}`.
 - Relay errors back off like `tail` and appear in `/healthz`. `SIGINT`/`SIGTERM` close the streams and save the cursor (`--cursor <name>`, same state files as `tail`).

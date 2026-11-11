@@ -13,6 +13,8 @@ export const FILTER_HELP = `EventFilter fields (all optional; each is a string o
   sender       sender login: dependabot[bot], ...
   label        label added or removed (action labeled / unlabeled on issues and PRs)
   reviewer     requested reviewer login or team slug (action review_requested)
+  sha          commit SHA (headSha): PR head, merge-group head, check suite, status, push
+  ref          branch name matching either headRef or baseRef (branch picks one by event)
   ignoreSenders   array of logins whose events never match
 
 Presets (\`on\` input; CLI --on): ejection, main-failure, dependabot-pr, review-requested,

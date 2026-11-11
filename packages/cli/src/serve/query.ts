@@ -14,6 +14,8 @@ const REPEATED = [
   "sender",
   "label",
   "reviewer",
+  "sha",
+  "ref",
   "on",
   "pr",
 ];
