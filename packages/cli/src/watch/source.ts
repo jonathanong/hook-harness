@@ -17,6 +17,16 @@ export interface Query {
 }
 
 const MAX_BACKOFF_MS = 5 * 60_000;
+/** The relay rejects more than 50 filters; past these limits only local filtering applies. */
+const MAX_RELAY_FILTERS = 50;
+const MAX_FILTERS_JSON = 4000;
+
+/** The `filters` param, or undefined when there are none or they are too big to send. */
+export function relayFilters(filters: EventFilter[] | undefined): string | undefined {
+  if (!filters?.length || filters.length > MAX_RELAY_FILTERS) return undefined;
+  const json = JSON.stringify(filters);
+  return json.length <= MAX_FILTERS_JSON ? json : undefined;
+}
 
 /** Capped exponential backoff shared by every source. */
 export function backoffMs(intervalMs: number, failures: number): number {
@@ -35,7 +45,8 @@ async function fetchPage(
   params.set("after", after);
   params.set("limit", String(limit));
   if (!query.payload) params.set("payload", "0");
-  if (query.filters?.length) params.set("filters", JSON.stringify(query.filters));
+  const filters = relayFilters(query.filters);
+  if (filters) params.set("filters", filters);
   const response = await ctx.fetch(`${withSlash(client.url)}events?${params}`, {
     headers: { authorization: `Bearer ${client.token}` },
     signal: ctx.signal,

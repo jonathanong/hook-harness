@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { lastLine, page, watchHarness, ev } from "../test-helpers/watch.ts";
+import { relayFilters } from "../watch/source.ts";
 import { tail } from "./tail.ts";
 import { wait } from "./wait.ts";
 
@@ -18,6 +19,14 @@ describe("relay-side filters", () => {
     const h = await watchHarness([page([ev("a", 1)])]);
     await wait(["--owner", "o", "--settle", "0s"], h.ctx);
     expect(h.calls.urls[0]!.searchParams.has("filters")).toBe(false);
+  });
+
+  it("keeps filters local when there are too many or they are too long to send", () => {
+    expect(relayFilters(undefined)).toBeUndefined();
+    expect(relayFilters([])).toBeUndefined();
+    expect(relayFilters(Array.from({ length: 51 }, () => ({})))).toBeUndefined();
+    expect(relayFilters([{ event: "x".repeat(5000) }])).toBeUndefined();
+    expect(relayFilters([{ event: "push" }])).toBe('[{"event":"push"}]');
   });
 
   it("polls again right away when the relay says there is more", async () => {
