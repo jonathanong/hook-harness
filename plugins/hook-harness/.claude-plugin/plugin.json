@@ -1,7 +1,7 @@
 {
   "name": "hook-harness",
   "description": "Consume GitHub events (merge-queue ejections, failed CI, slash commands) in agentic coding tools",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "author": {
     "name": "Jonathan Ong",
     "email": "jonathanrichardong@gmail.com"

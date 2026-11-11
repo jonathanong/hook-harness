@@ -22,6 +22,8 @@ export const eventFilter = z
     sha: strings.optional().describe("commit SHA; matches headSha"),
     ref: strings.optional().describe("branch; matches headRef or baseRef"),
     ignoreSenders: z.array(z.string()).optional().describe("logins whose events never match"),
+    app: strings.optional().describe("check suite App slug, e.g. codecov"),
+    ignoreApps: z.array(z.string()).optional().describe("App slugs whose check suites never match"),
   })
   .describe("Each field matches when the envelope value equals it or is one of the array values.");
 

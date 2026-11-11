@@ -1,6 +1,8 @@
 {
   "action": "completed",
   "check_suite": {
+    "id": 5555,
+    "app": { "slug": "codecov" },
     "head_sha": "abc123",
     "head_branch": "feature",
     "conclusion": "failure",

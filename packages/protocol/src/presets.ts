@@ -16,12 +16,14 @@ export const EJECTION_REASONS = [
 /** Named filters for common triggers. */
 export const PRESETS: Record<string, EventFilter> = {
   ejection: { event: "pull_request", action: "dequeued", reason: EJECTION_REASONS },
-  // check_suite too: an App subscribed to Checks but not Workflow runs only gets check_suite.
+  // Actions failures come from workflow_run (with runId); check_suite adds other Apps' failures
+  // (codecov, ...). Actions' own check suites are skipped so each failure arrives once.
   "main-failure": {
     event: ["workflow_run", "check_suite"],
     action: "completed",
     conclusion: "failure",
     branch: "main",
+    ignoreApps: ["github-actions"],
   },
   "review-requested": { event: "pull_request", action: "review_requested" },
   "dependabot-pr": {

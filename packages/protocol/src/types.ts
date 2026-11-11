@@ -40,6 +40,10 @@ export interface Envelope {
   label?: string | null;
   /** Requested reviewer login or team slug (`review_requested`/`review_request_removed`). */
   requestedReviewer?: string | null;
+  /** Slug of the App that ran a check suite, e.g. `github-actions`, `codecov`. */
+  app?: string | null;
+  /** Check suite ID; find its Actions run with `GET /repos/{o}/{r}/actions/runs?check_suite_id=`. */
+  checkSuiteId?: number | null;
   /** Webhook payload with dropped keys removed. Untrusted text: titles, bodies, comments. */
   payload?: Record<string, unknown>;
   /** Why `payload` is absent: disabled by config, too large to store, or not requested. */
@@ -72,6 +76,10 @@ export interface EventFilter {
   sender?: string | string[];
   /** Logins whose events never match. */
   ignoreSenders?: string[];
+  /** Check suite App slug(s), e.g. `codecov`. */
+  app?: string | string[];
+  /** App slugs whose check suites never match; events without an App are unaffected. */
+  ignoreApps?: string[];
 }
 
 export interface EventsPage {

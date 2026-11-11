@@ -43,6 +43,7 @@ export function matches(envelope: Envelope, filter: EventFilter): boolean {
     filter.ignoreSenders.includes(envelope.sender.login)
   )
     return false;
+  if (filter.ignoreApps && envelope.app && filter.ignoreApps.includes(envelope.app)) return false;
   if (
     filter.minAssociation !== undefined &&
     !associationAtLeast(envelope.authorAssociation, filter.minAssociation)
@@ -66,6 +67,7 @@ export function matches(envelope: Envelope, filter: EventFilter): boolean {
     oneOf(filter.label, envelope.label ?? null) &&
     oneOf(filter.reviewer, envelope.requestedReviewer ?? null) &&
     oneOf(filter.sha, envelope.headSha) &&
+    oneOf(filter.app, envelope.app ?? null) &&
     (filter.ref === undefined ||
       oneOf(filter.ref, envelope.headRef) ||
       oneOf(filter.ref, envelope.baseRef))

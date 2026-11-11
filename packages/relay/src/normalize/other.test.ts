@@ -14,6 +14,8 @@ describe("checks", () => {
       headSha: "abc123",
       headRef: "feature",
       conclusion: "failure",
+      app: "codecov",
+      checkSuiteId: 5555,
       url: "https://github.com/o/r/commit/abc123",
       sender: { login: "github-actions[bot]", type: "Bot" },
     });
