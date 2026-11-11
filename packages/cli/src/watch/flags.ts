@@ -50,7 +50,9 @@ Filters (one filter from these flags; events matching ANY filter are kept; none 
                            filter with --command /plan etc. GitHub reports private org members as
                            CONTRIBUTOR/NONE: use this carefully or verify membership via the API.
   --ignore-sender <login>  Drop events from these logins (repeatable)
-  --ignore-app <slug>      Drop check suites from these Apps, e.g. github-actions (repeatable)
+  --ignore-app <slug>      Drop check suites from these Apps, e.g. github-actions (repeatable).
+                           Like --ignore-sender, it applies to the filter built from flags,
+                           not to --on presets or --filter JSON (put "ignoreApps" there)
   --filter '<json>'        An EventFilter as JSON; repeatable, each is another filter
 
 Payloads:
