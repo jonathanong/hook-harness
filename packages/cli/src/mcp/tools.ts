@@ -45,17 +45,18 @@ async function openToolSession(
   const client = await resolveClient(ctx.env);
   const name = input.cursor_name;
   const stored = !input.after && !input.since && name ? await readCursor(ctx.env, name) : undefined;
+  const filters = [
+    ...((input.filters ?? []) as EventFilter[]),
+    ...(input.on ?? []).map((name) => preset(name)!),
+  ];
   return {
     source: relaySource(
       ctx,
       client,
-      { owner: input.owner, repos: input.repos ?? [], payload: input.include_payload },
+      { owner: input.owner, repos: input.repos ?? [], payload: input.include_payload, filters },
       INTERVAL_MS,
     ),
-    filters: [
-      ...((input.filters ?? []) as EventFilter[]),
-      ...(input.on ?? []).map((name) => preset(name)!),
-    ],
+    filters,
     cursor: startFrom(input.after || stored, input.since, ctx),
     intervalMs: INTERVAL_MS,
     ...timing,

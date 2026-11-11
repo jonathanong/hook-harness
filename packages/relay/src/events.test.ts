@@ -93,7 +93,7 @@ describe("GET /events query", () => {
       ScanIndexForward: true,
       Limit: 100,
     });
-    expect(body).toEqual({ events: [], cursor: lower, gap: false });
+    expect(body).toEqual({ events: [], cursor: lower, gap: false, more: false });
   });
 
   it("subtracts 60s from a recent cursor and echoes it when empty", async () => {
@@ -138,6 +138,7 @@ describe("GET /events query", () => {
       ],
       cursor: sk(2),
       gap: false,
+      more: true,
     });
     expect(query().map((q) => q.ExclusiveStartKey)).toEqual([undefined, { k: 1 }]);
   });

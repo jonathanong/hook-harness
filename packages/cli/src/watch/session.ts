@@ -87,7 +87,13 @@ export async function openSession(
   const persist = !str(values, "after") || str(values, "cursor") !== undefined;
   const client = url ? undefined : await resolveClient(ctx.env);
   const cursor = await startCursor(values, ctx, name);
-  const query = { owner, repos: list(values, "repo"), payload: values["no-payload"] !== true };
+  const query = {
+    owner,
+    repos: list(values, "repo"),
+    payload: values["no-payload"] !== true,
+    // `serve` polls once for clients with different filters, so it must not narrow the relay.
+    ...(relayOnly ? {} : { filters }),
+  };
   const token = ctx.env.HOOK_HARNESS_SOURCE_TOKEN ?? "";
   return {
     source: client
