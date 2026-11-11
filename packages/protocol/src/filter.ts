@@ -64,6 +64,10 @@ export function matches(envelope: Envelope, filter: EventFilter): boolean {
     oneOf(filter.command, envelope.command) &&
     oneOf(filter.sender, envelope.sender?.login ?? null) &&
     oneOf(filter.label, envelope.label ?? null) &&
-    oneOf(filter.reviewer, envelope.requestedReviewer ?? null)
+    oneOf(filter.reviewer, envelope.requestedReviewer ?? null) &&
+    oneOf(filter.sha, envelope.headSha) &&
+    (filter.ref === undefined ||
+      oneOf(filter.ref, envelope.headRef) ||
+      oneOf(filter.ref, envelope.baseRef))
   );
 }
