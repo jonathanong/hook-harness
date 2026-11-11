@@ -80,4 +80,6 @@ export interface EventsPage {
   cursor: string;
   /** True when the requested cursor is older than the retention window. */
   gap: boolean;
+  /** True when the page was cut short (limit, size or scan cap): poll again right away. */
+  more?: boolean;
 }

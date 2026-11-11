@@ -39,12 +39,15 @@ Decisions:
 - Writes it with `PutItem` and `expiresAt = now + 1 day`.
 - A manual redelivery gets a new sort key and is replayed on purpose.
 
-**`GET /events?owner=&repos=&after=&limit=&payload=`**
+**`GET /events?owner=&repos=&after=&limit=&payload=&filters=`**
 
 - Requires a bearer token. The table stores its SHA-256 hash, repo scope, expiry and a revoked flag.
 - The key condition is `SK > max(after − 60s, now − 1 day)`. The client dedupes by delivery ID.
 - `after` is either the previous cursor or a bare epoch-ms start time.
-- Returns `{events, cursor, gap}`. `gap` is true when `after` is older than the retention window.
+- Returns `{events, cursor, gap, more}`. `gap` is true when `after` is older than the retention window. `more` is true when the page was cut short (limit, 5 MB budget or scan cap), so poll again right away.
+- `filters` is a URL-encoded JSON array of EventFilter objects (at most 50), OR'd. The relay drops non-matching events before unpacking payloads, which shrinks responses. It doesn't reduce DynamoDB reads, because the partition is per owner. Unknown fields are ignored, so an older relay returns more than asked. Clients still filter locally, which means filter fields are append-only with frozen semantics.
+- At most 1000 items are read per request, whether they match or not, so a filter that matches little can't read the whole day at once. Hitting that cap returns `<last scanned>!` as the cursor, which resumes without replaying the overlap.
+- `wait`, `tail` and MCP send their filters. `serve` doesn't, because it polls once for clients with different filters.
 
 **Table**
 

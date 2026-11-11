@@ -1,4 +1,4 @@
-import type { EventsPage } from "@hook-harness/protocol";
+import type { EventFilter, EventsPage } from "@hook-harness/protocol";
 
 import type { ClientConfig } from "../client.ts";
 import { withSlash } from "../commands/common.ts";
@@ -12,6 +12,8 @@ export interface Query {
   owner: string;
   repos: string[];
   payload: boolean;
+  /** Sent so the relay drops non-matching events; the caller still filters locally. */
+  filters?: EventFilter[];
 }
 
 const MAX_BACKOFF_MS = 5 * 60_000;
@@ -33,6 +35,7 @@ async function fetchPage(
   params.set("after", after);
   params.set("limit", String(limit));
   if (!query.payload) params.set("payload", "0");
+  if (query.filters?.length) params.set("filters", JSON.stringify(query.filters));
   const response = await ctx.fetch(`${withSlash(client.url)}events?${params}`, {
     headers: { authorization: `Bearer ${client.token}` },
     signal: ctx.signal,
@@ -66,7 +69,7 @@ export function relaySource(
           failures = 0;
           after = page.cursor;
           result = { page };
-          wait = page.events.length >= limit ? 0 : undefined;
+          wait = (page.more ?? page.events.length >= limit) ? 0 : undefined;
         } catch (error) {
           if (error instanceof AuthError) throw error;
           failures += 1;
