@@ -26,22 +26,29 @@ Requires Node 24+. The package bundles the relay Lambda code and CloudFormation 
 
 The plugin gives an agent the `hook-harness mcp` server (`wait_for_events`, `get_events`) and a `hook-harness` skill that teaches it to log in, wait with a caller-owned cursor, write filters and treat payloads as untrusted.
 
+The plugin installs from the shared [`jonathanong/harness-plugins`](https://github.com/jonathanong/harness-plugins) marketplace.
+
 ```bash
 # Claude Code
-/plugin marketplace add jonathanong/hook-harness   # inside Claude Code
-/plugin install hook-harness@hook-harness
+claude plugin marketplace add jonathanong/harness-plugins
+claude plugin install hook-harness@harness-plugins
 
-# Codex (then enable the hook-harness plugin)
-codex plugin marketplace add jonathanong/hook-harness
+# Codex
+codex plugin marketplace add jonathanong/harness-plugins --ref main
+codex plugin add hook-harness@harness-plugins
 ```
 
-Codex installs from before the marketplace was renamed `hook-harness` use `hook-harness@jonathanong`. Remove the plugin first, then its marketplace, and add both again:
+If you added this repository as a marketplace before, remove it and reinstall. Claude Code uninstalls a marketplace's plugins when you remove it:
 
 ```bash
-codex plugin remove hook-harness@jonathanong
-codex plugin marketplace remove jonathanong
-codex plugin marketplace add jonathanong/hook-harness
-codex plugin add hook-harness@hook-harness
+claude plugin marketplace add jonathanong/harness-plugins
+claude plugin marketplace remove hook-harness
+claude plugin install hook-harness@harness-plugins
+
+codex plugin marketplace add jonathanong/harness-plugins --ref main
+codex plugin remove hook-harness@hook-harness   # or hook-harness@jonathanong
+codex plugin marketplace remove hook-harness    # or jonathanong
+codex plugin add hook-harness@harness-plugins
 ```
 
 The MCP server runs `npx -y hook-harness mcp`. Log in once with `hook-harness login` (see [docs/github-app.md](docs/github-app.md) for tokens). Optional: `hook-harness serve` runs a local SSE daemon.

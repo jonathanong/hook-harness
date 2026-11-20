@@ -15,7 +15,6 @@ plugin:
       - any-glob-to-any-file:
           - "plugins/**"
           - ".claude-plugin/**"
-          - ".agents/**"
           - "marketplace.json"
 
 docs:
