@@ -41,9 +41,11 @@ codex plugin add hook-harness@harness-plugins
 If you added this repository as a marketplace before, remove it and reinstall. Claude Code uninstalls a marketplace's plugins when you remove it:
 
 ```bash
+claude plugin marketplace add jonathanong/harness-plugins
 claude plugin marketplace remove hook-harness
 claude plugin install hook-harness@harness-plugins
 
+codex plugin marketplace add jonathanong/harness-plugins --ref main
 codex plugin remove hook-harness@hook-harness   # or hook-harness@jonathanong
 codex plugin marketplace remove hook-harness    # or jonathanong
 codex plugin add hook-harness@harness-plugins
