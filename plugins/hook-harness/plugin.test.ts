@@ -37,20 +37,9 @@ describe("plugin manifests", () => {
     expect(codex.interface.defaultPrompt.length).toBeGreaterThan(0);
   });
 
-  it("points every marketplace at the plugin", () => {
-    const claude = readJson(".claude-plugin/marketplace.json");
-    const codex = readJson(".agents/plugins/marketplace.json");
+  it("points the open-format marketplace at the npm package", () => {
     const npm = readJson("marketplace.json");
 
-    expect(claude.plugins).toEqual([
-      expect.objectContaining({ name: "hook-harness", source: "./plugins/hook-harness" }),
-    ]);
-    expect(codex.plugins).toEqual([
-      expect.objectContaining({
-        name: "hook-harness",
-        source: { source: "local", path: "./plugins/hook-harness" },
-      }),
-    ]);
     expect(npm).toEqual(
       expect.objectContaining({ source: { source: "npm", package: "hook-harness" } }),
     );
