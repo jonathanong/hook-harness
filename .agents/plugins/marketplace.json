@@ -1,7 +1,7 @@
 {
-  "name": "jonathanong",
+  "name": "hook-harness",
   "interface": {
-    "displayName": "Jonathan Ong"
+    "displayName": "hook-harness"
   },
   "plugins": [
     {

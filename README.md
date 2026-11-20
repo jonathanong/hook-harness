@@ -35,6 +35,15 @@ The plugin gives an agent the `hook-harness mcp` server (`wait_for_events`, `get
 codex plugin marketplace add jonathanong/hook-harness
 ```
 
+Codex installs from before the marketplace was renamed `hook-harness` use `hook-harness@jonathanong`. Remove the plugin first, then its marketplace, and add both again:
+
+```bash
+codex plugin remove hook-harness@jonathanong
+codex plugin marketplace remove jonathanong
+codex plugin marketplace add jonathanong/hook-harness
+codex plugin add hook-harness@hook-harness
+```
+
 The MCP server runs `npx -y hook-harness mcp`. Log in once with `hook-harness login` (see [docs/github-app.md](docs/github-app.md) for tokens). Optional: `hook-harness serve` runs a local SSE daemon.
 
 ## Common triggers
