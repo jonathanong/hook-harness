@@ -38,9 +38,9 @@
   },
   "devDependencies": {
     "@aws-sdk/client-cloudformation": "3.1165.0",
-    "@aws-sdk/client-dynamodb": "3.1165.0",
+    "@aws-sdk/client-dynamodb": "3.1170.0",
     "@aws-sdk/client-lambda": "3.1165.0",
-    "@aws-sdk/lib-dynamodb": "3.1165.0",
+    "@aws-sdk/lib-dynamodb": "3.1170.0",
     "@hook-harness/protocol": "workspace:*",
     "@hook-harness/relay": "workspace:*",
     "@modelcontextprotocol/sdk": "1.32.2",
