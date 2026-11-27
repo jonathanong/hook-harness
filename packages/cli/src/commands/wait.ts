@@ -12,7 +12,8 @@ Blocks until matching events arrive, prints ONE JSON object, and exits 0:
   {"events":[...],"gap":true,"cursor":"..."}                 relay history gap; re-sync now
   {"events":[],"gap":false,"timedOut":true,"cursor":"..."}   --timeout elapsed, nothing matched
 Exit code is 0 in all three cases so background-command harnesses just wake up; read the JSON.
-Exit 1: auth failure (401/403), invalid cursor, or the relay unreachable until --timeout.
+Exit 1: auth failure (401: run login; 403: the token's repo scope does not cover an --owner),
+invalid cursor, or the relay unreachable until --timeout.
 
 Pass the printed "cursor" back as --after on your next wait to resume exactly there.
 

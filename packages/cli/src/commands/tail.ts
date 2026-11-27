@@ -7,7 +7,8 @@ import { matchesAny, openSession } from "../watch/session.ts";
 const HELP = `hook-harness tail --owner <owner> [flags]
 
 Streams matching events as NDJSON until interrupted (SIGINT), saving the cursor as it goes.
-Each line is {"event":{...},"cursor":"..."}; a relay gap prints {"gap":true,"cursor":"..."}.
+Each line is {"event":{...},"cursor":"..."}; a relay gap prints {"gap":true,"cursor":"..."}
+(with "owner" naming the owner when there are several).
 All lines from one poll share that poll's end cursor; pass a cursor back as --after to resume.
 Transient errors are retried with backoff and reported on stderr; 401/403 exit 1.
 
@@ -25,15 +26,18 @@ export const tail: Command = async (args, ctx) => {
   }
   const session = await openSession(values, ctx, "30m");
   let cursor = session.cursor;
-  for await (const result of session.source.poll(cursor.sk, () => session.intervalMs)) {
+  for await (const result of session.source.poll(cursor, () => session.intervalMs)) {
     if ("error" in result) {
       ctx.err(`warning: ${result.error.message}; retrying`);
       continue;
     }
-    const step = advance(cursor, result.page);
+    const step = advance(cursor, result.page, result.owner);
     cursor = step.next;
     const encoded = encodeCursor(cursor);
-    if (result.page.gap) ctx.out(JSON.stringify({ gap: true, cursor: encoded }));
+    if (result.page.gap) {
+      const owner = result.owner ? { owner: result.owner } : {};
+      ctx.out(JSON.stringify({ gap: true, ...owner, cursor: encoded }));
+    }
     for (const event of step.fresh) {
       if (matchesAny(session.filters, event)) ctx.out(JSON.stringify({ event, cursor: encoded }));
     }

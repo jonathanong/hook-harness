@@ -3,13 +3,16 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 
 import { createServer } from "../mcp/server.ts";
-import { watchHarness, type Step } from "./watch.ts";
+import { ownersHarness, watchHarness, type Step } from "./watch.ts";
 
 export const START = Date.parse("2026-11-09T00:00:00Z");
 
-/** A relay-backed harness plus an MCP client linked to the server in-process. */
-export async function mcpHarness(steps: Step[]) {
-  const h = await watchHarness(steps);
+/**
+ * A relay-backed harness plus an MCP client linked to the server in-process. Steps keyed by
+ * owner answer each owner separately.
+ */
+export async function mcpHarness(steps: Step[] | Record<string, Step[]>) {
+  const h = await (Array.isArray(steps) ? watchHarness(steps) : ownersHarness(steps));
   const server = createServer(h.ctx);
   const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
   const client = new Client({ name: "test", version: "0.0.0" });

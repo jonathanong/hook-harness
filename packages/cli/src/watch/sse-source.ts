@@ -1,7 +1,7 @@
 import type { Envelope, EventFilter } from "@hook-harness/protocol";
 
 import type { Ctx } from "../types.ts";
-import { decodeCursor, encodeCursor, type Cursor } from "./cursor.ts";
+import { decodeCursor, encodeCursor } from "./cursor.ts";
 import { createSseParser, type SseItem } from "./sse-parser.ts";
 import { AuthError, backoffMs } from "./source.ts";
 import type { EventSource, PollResult } from "./types.ts";
@@ -12,8 +12,6 @@ export interface SseOptions {
   /** Bearer token for `serve --auth-token`; empty means none. */
   token: string;
   filters: EventFilter[];
-  /** Where to resume; sent as `Last-Event-ID` on the first connect. */
-  cursor: Cursor;
   intervalMs: number;
 }
 
@@ -55,9 +53,10 @@ function take(item: SseItem): Taken {
  */
 export function sseSource(ctx: Ctx, options: SseOptions): EventSource {
   return {
-    async *poll(startSk): AsyncGenerator<PollResult> {
-      let sk = startSk;
-      let lastId = encodeCursor(options.cursor);
+    // `start` is sent as `Last-Event-ID` on the first connect.
+    async *poll(start): AsyncGenerator<PollResult> {
+      let sk = start.sk;
+      let lastId = encodeCursor(start);
       let failures = 0;
       while (!ctx.signal.aborted) {
         try {

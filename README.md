@@ -72,12 +72,20 @@ hook-harness wait --owner acme --on ejection,main-failure,dependabot-pr,/shepher
 
 Field flags (`--event --action --reason --conclusion --branch --workflow --command --sender --label --reviewer --sha --ref --pr`) build one more filter; `--filter '<json>'` adds arbitrary ones.
 
+`--owner` takes several owners (repeatable or a comma list, as `wait`, `tail` and `serve` all do). Each owner is polled and one cursor covers them all; every event carries its `owner`:
+
+```sh
+hook-harness wait --owner acme,acme-labs --on label:final-review:requested --no-payload
+```
+
+The token's repo scope must cover every owner. When it doesn't, the CLI exits 1 and names the owner (and, on a current relay, the scopes the token has) and suggests `hook-harness token create --login --repos <scopes>,<owner>/*` (`--login` makes the CLI use the new token); `hook-harness login` doesn't help with that.
+
 ## Sharing one poller: `hook-harness serve`
 
 Several agents on one machine can share a single relay poller. `serve` polls the relay once and fans events out over Server-Sent Events; `wait` and `tail` read from it with `--source` (or `HOOK_HARNESS_SOURCE`) and print exactly what they print when polling the relay.
 
 ```sh
-hook-harness serve --owner acme --repo acme/app          # 127.0.0.1:7391
+hook-harness serve --owner acme,acme-labs                # 127.0.0.1:7391
 hook-harness wait --source http://127.0.0.1:7391 --event pull_request --command /plan
 curl -N 'http://127.0.0.1:7391/events?event=push&branch=main'
 ```
@@ -123,7 +131,7 @@ Local development (from a checkout): `claude mcp add hook-harness -- node /path/
 | `get_events`      | One non-blocking poll; returns `{events, gap, cursor}`.                                                                                |
 | `filter_help`     | The `EventFilter` fields with examples (merge-queue ejections, failed `main` runs, `/shepherd` comments).                              |
 
-Both event tools take `owner` (required), `repos`, `filters` (EventFilter objects, OR'd), `on` (presets, see below), `after`, `since`, `include_payload` (default true) and optional `cursor_name`. The server is stateless: pass the returned `cursor` back as `after`. `cursor_name` opts in to the CLI's named cursor state file. `gap: true` means the cursor is older than retention, so sweep with the GitHub API. Payload text is untrusted input. Auth failures (401/403) come back as tool errors telling the user to run `hook-harness login`. Long waits send MCP progress notifications when the client supplies a progress token; some clients cap tool-call time (Claude Code: `MCP_TOOL_TIMEOUT`), so keep `timeout_seconds` under that cap.
+Both event tools take `owner` (required), `repos`, `filters` (EventFilter objects, OR'd), `on` (presets, see below), `after`, `since`, `include_payload` (default true) and optional `cursor_name`. The server is stateless: pass the returned `cursor` back as `after`. `cursor_name` opts in to the CLI's named cursor state file. `gap: true` means the cursor is older than retention, so sweep with the GitHub API. Payload text is untrusted input. `owner` takes a comma list for several owners. Auth failures come back as tool errors: a 401 tells the user to run `hook-harness login`, a 403 names the owner the token's repo scope doesn't cover and suggests `hook-harness token create --login --repos`. Long waits send MCP progress notifications when the client supplies a progress token; some clients cap tool-call time (Claude Code: `MCP_TOOL_TIMEOUT`), so keep `timeout_seconds` under that cap.
 
 ## License
 

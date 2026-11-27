@@ -32,7 +32,7 @@ export async function pollUpstream(
   hub: Hub,
 ): Promise<void> {
   const { health } = upstream;
-  for await (const result of session.source.poll(upstream.cursor.sk, () => session.intervalMs)) {
+  for await (const result of session.source.poll(upstream.cursor, () => session.intervalMs)) {
     const now = ctx.now();
     health.lastPollAt = now.toISOString();
     buffer.prune(now.getTime());
@@ -42,12 +42,13 @@ export async function pollUpstream(
       continue;
     }
     health.lastError = null;
-    const step = advance(upstream.cursor, result.page);
+    const step = advance(upstream.cursor, result.page, result.owner);
     upstream.cursor = step.next;
     health.cursor = encodeCursor(step.next);
     if (result.page.gap) hub.gap(health.cursor);
     for (const event of step.fresh) {
-      hub.publish(buffer.push(event, result.page.cursor, now.getTime()));
+      // With several owners the summary (earliest) sort key, so time-based replay never skips.
+      hub.publish(buffer.push(event, step.next.sk, now.getTime()));
     }
     await session.save(step.next);
   }

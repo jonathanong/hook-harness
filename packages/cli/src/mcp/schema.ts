@@ -28,7 +28,10 @@ export const eventFilter = z
   .describe("Each field matches when the envelope value equals it or is one of the array values.");
 
 const scope = {
-  owner: z.string().min(1).describe("GitHub owner (user or org) whose events to read."),
+  owner: z
+    .string()
+    .min(1)
+    .describe("GitHub owner (user or org) whose events to read; several as a comma list."),
   repos: z.array(z.string()).optional().describe("Limit to these owner/name repos."),
   filters: z
     .array(eventFilter)

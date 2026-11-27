@@ -37,6 +37,41 @@ describe("cursor", () => {
   });
 });
 
+describe("multi-owner cursor", () => {
+  const raw = (data: unknown) => Buffer.from(JSON.stringify(data)).toString("base64url");
+  const owners = { a: { sk: "200#x", seen: ["x"] }, b: { sk: "0100#y", seen: ["y"] } };
+
+  it("encodes as v2 and summarizes with the earliest owner", () => {
+    const cursor = decodeCursor(raw({ v: 2, owners }));
+    expect(cursor).toEqual({ sk: "0100#y", seen: ["x", "y"], owners });
+    expect(JSON.parse(Buffer.from(encodeCursor(cursor), "base64url").toString())).toEqual({
+      v: 2,
+      owners,
+    });
+  });
+
+  it("advances only the page's owner", () => {
+    const cursor = decodeCursor(raw({ v: 2, owners }));
+    const { fresh, next } = advance(cursor, page([ev("x", 1), ev("z", 2)], "300"), "a");
+    expect(fresh.map((event) => event.id)).toEqual(["z"]);
+    expect(next.owners).toEqual({ a: { sk: "300", seen: ["x", "z"] }, b: owners.b });
+  });
+
+  it("rejects malformed v2 cursors", () => {
+    for (const data of [
+      { v: 2, owners: { a: owners.a } },
+      { v: 2, owners: { a: owners.a, b: { sk: 1, seen: [] } } },
+      { v: 2, owners: { a: owners.a, b: { sk: "1", seen: [1] } } },
+      { v: 2, owners: { a: owners.a, b: null } },
+      { v: 2, owners: null },
+      { v: 3, sk: "1", seen: [] },
+      null,
+    ]) {
+      expect(() => decodeCursor(raw(data))).toThrow("invalid cursor");
+    }
+  });
+});
+
 describe("durations", () => {
   it("parses units and zero handling", () => {
     expect(parseDuration("500ms", "x")).toBe(500);

@@ -31,21 +31,26 @@ export async function collect(
     settleAt === undefined
       ? session.intervalMs
       : Math.max(0, Math.min(session.intervalMs, settleAt - ctx.now().getTime()));
+  // Several owners' polls interleave, so put their events back in time order.
+  const ordered = (): Envelope[] =>
+    session.cursor.owners
+      ? matched.toSorted((a, b) => Date.parse(a.receivedAt) - Date.parse(b.receivedAt))
+      : matched;
   const finish = (extra: { gap?: boolean; timedOut?: true }): Collected => ({
-    events: matched,
+    events: ordered(),
     cursor,
     gap: extra.gap ?? false,
     timedOut: extra.timedOut ?? false,
   });
 
-  for await (const result of session.source.poll(cursor.sk, delay)) {
+  for await (const result of session.source.poll(cursor, delay)) {
     onPoll?.(elapsed());
     if ("error" in result) {
       if (matched.length > 0) return finish({});
       if (elapsed() >= session.timeoutMs) throw result.error;
       continue;
     }
-    const step = advance(cursor, result.page);
+    const step = advance(cursor, result.page, result.owner);
     cursor = step.next;
     matched.push(...step.fresh.filter((event) => matchesAny(session.filters, event)));
     if (result.page.gap) return finish({ gap: true });

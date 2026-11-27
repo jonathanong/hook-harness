@@ -44,6 +44,7 @@ Decisions:
 - Requires a bearer token. The table stores its SHA-256 hash, repo scope, expiry and a revoked flag.
 - The key condition is `SK > max(after − 60s, now − 1 day)`. The client dedupes by delivery ID.
 - `after` is either the previous cursor or a bare epoch-ms start time.
+- A valid token whose repo scope covers nothing under `owner` gets 403 `{error, owner, scopes}`; a missing, revoked or expired token gets 401.
 - Returns `{events, cursor, gap, more}`. `gap` is true when `after` is older than the retention window. `more` is true when the page was cut short (limit, 5 MB budget or scan cap), so poll again right away.
 - `filters` is a URL-encoded JSON array of EventFilter objects (at most 50), OR'd. The relay drops non-matching events before unpacking payloads, which shrinks responses. It doesn't reduce DynamoDB reads, because the partition is per owner. Unknown fields are ignored, so an older relay returns more than asked. Clients still filter locally, which means filter fields are append-only with frozen semantics.
 - At most 1000 items are read per request, whether they match or not, so a filter that matches little can't read the whole day at once. Hitting that cap returns `<last scanned>!` as the cursor, which resumes without replaying the overlap.
@@ -153,6 +154,7 @@ Deployment state lives in `~/.config/hook-harness/deployments/<stack>.json`.
   - `--after <cursor>` is stateless and caller-owned.
   - `--cursor <name>` uses a local state file.
   - `--since <time|duration>` sets a start time.
+  - `--owner a,b` polls each owner's partition separately and keeps one position per owner in a single cursor (`v: 2`). A single-owner cursor (`v: 1`) applies to every owner; an owner the cursor lacks starts from `--since`, else now. With one owner the cursor stays `v: 1`.
 - `serve`: a local SSE daemon. One poller fans out to many local clients, with per-client filters and `Last-Event-ID` replay.
 - `mcp`: a stdio MCP server with `wait_for_events` and `get_events` tools. The caller owns the cursor.
 

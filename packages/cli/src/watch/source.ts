@@ -5,7 +5,7 @@ import { withSlash } from "../commands/common.ts";
 import type { Ctx } from "../types.ts";
 import type { EventSource, PollResult } from "./types.ts";
 
-/** 401/403 from the relay: retrying cannot help. */
+/** 401/403 from the relay (or serve): retrying cannot help. */
 export class AuthError extends Error {}
 
 export interface Query {
@@ -33,6 +33,21 @@ export function backoffMs(intervalMs: number, failures: number): number {
   return Math.min(intervalMs * 2 ** failures, MAX_BACKOFF_MS);
 }
 
+/**
+ * The relay's only 403 is a valid token whose repo scope lists nothing under the owner. Newer
+ * relays name the token's scopes in the body; older ones do not.
+ */
+async function outOfScope(response: Response, owner: string): Promise<string> {
+  const body = (await response.json().catch(() => undefined)) as { scopes?: unknown } | undefined;
+  const scopes = Array.isArray(body?.scopes) ? body.scopes.map(String) : undefined;
+  const listed = scopes ? ` (it has ${scopes.join(", ")})` : "";
+  const repos = [...(scopes ?? ["<current repos>"]), `${owner}/*`].join(",");
+  return (
+    `the token's repo scope does not cover owner "${owner}"${listed} (HTTP 403); ` +
+    `create one that does with hook-harness token create --login --repos ${repos}`
+  );
+}
+
 async function fetchPage(
   ctx: Ctx,
   client: ClientConfig,
@@ -51,11 +66,10 @@ async function fetchPage(
     headers: { authorization: `Bearer ${client.token}` },
     signal: ctx.signal,
   });
-  if (response.status === 401 || response.status === 403) {
-    throw new AuthError(
-      `relay rejected the token (HTTP ${response.status}); run hook-harness login`,
-    );
+  if (response.status === 401) {
+    throw new AuthError("relay rejected the token (HTTP 401); run hook-harness login");
   }
+  if (response.status === 403) throw new AuthError(await outOfScope(response, query.owner));
   if (!response.ok) throw new Error(`relay returned HTTP ${response.status}`);
   return (await response.json()) as EventsPage;
 }
@@ -69,8 +83,8 @@ export function relaySource(
   limit = 100,
 ): EventSource {
   return {
-    async *poll(startSk, delay): AsyncGenerator<PollResult> {
-      let after = startSk;
+    async *poll(start, delay): AsyncGenerator<PollResult> {
+      let after = start.sk;
       let failures = 0;
       while (!ctx.signal.aborted) {
         let wait: number | undefined;
