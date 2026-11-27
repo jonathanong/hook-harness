@@ -103,7 +103,7 @@ export function relaySource(
         }
         yield result;
         // Asked after the consumer handled the result, so it can shorten the sleep.
-        await ctx.sleep(wait ?? delay(), ctx.signal);
+        await ctx.sleep(wait ?? delay?.() ?? intervalMs, ctx.signal);
       }
     },
   };

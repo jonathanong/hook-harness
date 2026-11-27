@@ -35,6 +35,19 @@ describe("several owners over MCP", () => {
     expect(Object.keys(decodeCursor(body.cursor as string).owners!).sort()).toEqual(["a", "b"]);
   });
 
+  it("get_events takes one page per owner even when the relay has more", async () => {
+    const h = await start({
+      a: [{ ...page([ev("a1", 1, { owner: "a" })], "sa"), more: true }, page([ev("a2", 2)], "s2")],
+      b: [page([ev("b1", 2, { owner: "b" })], "sb")],
+    });
+    const body = jsonOf(await h.call("get_events", { owner: "a,b" }));
+    expect((body.events as Array<{ id: string }>).map((event) => event.id).sort()).toEqual([
+      "a1",
+      "b1",
+    ]);
+    expect(h.calls.urls).toHaveLength(2);
+  });
+
   it("wait_for_events collects from every owner", async () => {
     const h = await start({ a: steps().a, b: [page([ev("b1", 2, { owner: "b" })], "sb")] });
     const body = jsonOf(await h.call("wait_for_events", { owner: "a,b" }));

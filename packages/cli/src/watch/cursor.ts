@@ -38,7 +38,7 @@ export function combine(owners: Record<string, Position>): Cursor {
 export function forOwners(cursor: Cursor, owners: string[], fallback: Position): Cursor {
   const pick = (owner: string): Position => {
     if (!cursor.owners) return { sk: cursor.sk, seen: cursor.seen };
-    return cursor.owners[owner] ?? fallback;
+    return Object.hasOwn(cursor.owners, owner) ? cursor.owners[owner]! : fallback;
   };
   if (owners.length === 1) return pick(owners[0]!);
   return combine(Object.fromEntries(owners.map((owner) => [owner, pick(owner)])));
@@ -104,7 +104,10 @@ export function advance(
   page: EventsPage,
   owner?: string,
 ): { fresh: Envelope[]; next: Cursor } {
-  const position = owner ? cursor.owners?.[owner] : undefined;
+  const position =
+    owner && cursor.owners && Object.hasOwn(cursor.owners, owner)
+      ? cursor.owners[owner]
+      : undefined;
   if (!position) return step(cursor, page);
   const { fresh, next } = step(position, page);
   return { fresh, next: combine({ ...cursor.owners, [owner!]: next }) };

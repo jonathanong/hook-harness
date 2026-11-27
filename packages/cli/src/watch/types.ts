@@ -11,8 +11,9 @@ export type PollResult = ({ page: EventsPage } | { error: Error }) & { owner?: s
 /**
  * Where `wait` and `tail` get batches from. The relay poller is one implementation; a local
  * `serve` fan-out can be another without touching filter, settle, or cursor logic.
- * `delay()` is asked for the sleep before each next poll so callers can shorten it.
+ * `delay()` is asked for the sleep before each next poll so callers can shorten it; without one
+ * the source sleeps its interval.
  */
 export interface EventSource {
-  poll(start: Cursor, delay: () => number): AsyncGenerator<PollResult>;
+  poll(start: Cursor, delay?: () => number): AsyncGenerator<PollResult>;
 }

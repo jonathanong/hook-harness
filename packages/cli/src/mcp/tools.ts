@@ -42,6 +42,7 @@ async function openToolSession(
   input: ScopeInput,
   ctx: Ctx,
   timing: { timeoutMs: number; settleMs: number },
+  once = false,
 ): Promise<Session> {
   const client = await resolveClient(ctx.env);
   const name = input.cursor_name;
@@ -59,6 +60,7 @@ async function openToolSession(
       { repos: input.repos ?? [], payload: input.include_payload, filters },
       owners,
       INTERVAL_MS,
+      once,
     ),
     filters,
     cursor: forOwners(started, owners, startFrom(undefined, input.since, ctx)),
@@ -117,14 +119,14 @@ export function waitForEvents(input: WaitInput, ctx: Ctx, extra: Extra): Promise
 export function getEvents(input: ScopeInput, ctx: Ctx, extra: Extra): Promise<CallToolResult> {
   return guarded(async () => {
     const scoped = cancellable(ctx, extra);
-    const session = await openToolSession(input, scoped, { timeoutMs: 0, settleMs: 0 });
+    const session = await openToolSession(input, scoped, { timeoutMs: 0, settleMs: 0 }, true);
     // One poll per owner: leaving the loop stops the source before any retry sleep.
     const expected = Object.keys(session.cursor.owners ?? {}).length || 1;
     const answered = new Set<string | undefined>();
     const events: Envelope[] = [];
     let cursor = session.cursor;
     let gap = false;
-    for await (const result of session.source.poll(cursor, () => INTERVAL_MS)) {
+    for await (const result of session.source.poll(cursor)) {
       if ("error" in result) throw result.error;
       const step = advance(cursor, result.page, result.owner);
       cursor = step.next;

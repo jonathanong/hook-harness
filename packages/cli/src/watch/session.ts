@@ -92,6 +92,13 @@ export async function openSession(
   const persist = !str(values, "after") || str(values, "cursor") !== undefined;
   const client = url ? undefined : await resolveClient(ctx.env);
   const started = await startCursor(values, ctx, name);
+  // A `serve` stream has one position; resuming it would fold the per-owner positions into one.
+  if (url && started.owners) {
+    throw new UsageError(
+      `cursor "${name}" covers owners ${Object.keys(started.owners).join(", ")}; ` +
+        "use another --cursor with --source",
+    );
+  }
   // An owner the saved cursor does not know yet starts from --since, else now.
   const fresh = startFrom(undefined, str(values, "since"), ctx);
   const cursor = url ? started : forOwners(started, owners, fresh);

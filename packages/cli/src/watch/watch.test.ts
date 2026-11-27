@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { defaultCtx } from "../ctx.ts";
 import { parseDuration, parseSince } from "../duration.ts";
-import { ev, page } from "../test-helpers/watch.ts";
-import { advance, decodeCursor, encodeCursor } from "./cursor.ts";
+import { resolveClient } from "../client.ts";
+import { ev, page, watchHarness } from "../test-helpers/watch.ts";
+import { advance, decodeCursor, encodeCursor, forOwners } from "./cursor.ts";
+import { relaySource } from "./source.ts";
 import { readCursor, stateDir, writeCursor } from "./store.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -57,6 +59,17 @@ describe("multi-owner cursor", () => {
     expect(next.owners).toEqual({ a: { sk: "300", seen: ["x", "z"] }, b: owners.b });
   });
 
+  it("ignores inherited properties as owner names", () => {
+    const cursor = decodeCursor(raw({ v: 2, owners }));
+    const fallback = { sk: "50", seen: [] };
+    expect(forOwners(cursor, ["a", "constructor"], fallback).owners).toEqual({
+      a: owners.a,
+      constructor: fallback,
+    });
+    const { next } = advance(cursor, page([ev("q", 1)], "400"), "toString");
+    expect(next).toEqual({ sk: "400", seen: ["q"] });
+  });
+
   it("rejects malformed v2 cursors", () => {
     for (const data of [
       { v: 2, owners: { a: owners.a } },
@@ -69,6 +82,19 @@ describe("multi-owner cursor", () => {
     ]) {
       expect(() => decodeCursor(raw(data))).toThrow("invalid cursor");
     }
+  });
+});
+
+describe("relay source", () => {
+  it("sleeps its interval between polls when given no delay", async () => {
+    const h = await watchHarness([page([], "s1")]);
+    const client = await resolveClient(h.ctx.env);
+    const source = relaySource(h.ctx, client, { owner: "o", repos: [], payload: true }, 5000);
+    const poll = source.poll({ sk: "1", seen: [] });
+    await poll.next();
+    await poll.next();
+    expect(h.calls.times[1]! - h.calls.times[0]!).toBe(5000);
+    await poll.return(undefined);
   });
 });
 
