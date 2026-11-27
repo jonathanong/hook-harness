@@ -20,7 +20,7 @@ Create it under the org that will install it: **Org settings → Developer setti
 | Setting                                           | Value                                                 |
 | ------------------------------------------------- | ----------------------------------------------------- |
 | GitHub App name                                   | e.g. `<org>-hook-harness`                             |
-| Homepage URL                                      | `https://github.com/jonathanong/hook-harness`         |
+| Homepage URL                                      | `https://github.com/jongleberry/hook-harness`         |
 | Callback URL, Setup URL                           | empty                                                 |
 | Request user authorization (OAuth) during install | off                                                   |
 | Webhook → Active                                  | on                                                    |

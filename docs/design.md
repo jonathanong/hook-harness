@@ -1,6 +1,6 @@
 # hook-harness: GitHub events in, agent runs out
 
-Repo: `jonathanong/hook-harness`.
+Repo: `jongleberry/hook-harness`.
 
 ## Context
 
