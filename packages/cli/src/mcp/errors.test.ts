@@ -32,7 +32,7 @@ describe("error mapping", () => {
       const result = await h.call(tool, { owner: "o" });
       expect(result.isError).toBe(true);
       expect(textOf(result)).toContain('does not cover owner "o"');
-      expect(textOf(result)).toContain("token create --login --repos <current repos>,o/*");
+      expect(textOf(result)).toContain("token create --login --repos '<current repos>,o/*'");
       expect(textOf(result)).not.toContain("run hook-harness login");
     }
   });

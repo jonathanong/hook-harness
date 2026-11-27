@@ -62,7 +62,7 @@ describe("multi-owner cursor", () => {
   it("ignores inherited properties as owner names", () => {
     const cursor = decodeCursor(raw({ v: 2, owners }));
     const fallback = { sk: "50", seen: [] };
-    expect(forOwners(cursor, ["a", "constructor"], fallback).owners).toEqual({
+    expect(forOwners(cursor, ["a", "constructor"], () => fallback).owners).toEqual({
       a: owners.a,
       constructor: fallback,
     });

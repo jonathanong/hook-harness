@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { ev, lastLine, page, watchHarness } from "../test-helpers/watch.ts";
+import { encodeCursor } from "../watch/cursor.ts";
 import { buildFilters } from "../watch/flags.ts";
 import { wait } from "./wait.ts";
 
@@ -91,6 +92,14 @@ describe("wait argument errors", () => {
     ];
     for (const [args, message] of cases) await expect(wait(args, h.ctx)).rejects.toThrow(message);
     expect(h.calls.urls).toHaveLength(0);
+  });
+
+  it("ignores --since when --after already gives every owner a position", async () => {
+    const h = await watchHarness([page([ev("a", 1)], "s1")]);
+    const after = encodeCursor({ sk: "1", seen: [] });
+    const args = ["--owner", "a,b", "--after", after, "--since", "yesterday", "--settle", "0s"];
+    expect(await wait(args, h.ctx)).toBe(0);
+    expect(h.calls.urls.map((url) => url.searchParams.get("after"))).toEqual(["1", "1"]);
   });
 
   it("explains how to log in when no credentials exist", async () => {

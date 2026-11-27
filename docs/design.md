@@ -130,7 +130,7 @@ Each event has a small envelope for filtering, plus the webhook payload:
 
 ## Local fan-out (`serve`)
 
-The relay stays store-and-poll. On one machine, `hook-harness serve` is the only thing that polls it: it keeps a bounded in-memory ring buffer (1000 events or 1 hour) and streams events to local clients over SSE with per-client filters, `Last-Event-ID` replay and an explicit `gap` event. `wait`/`tail --source <url>` are a second `EventSource` implementation over that stream, so filtering, settle and cursors are unchanged. Loopback only by default; non-loopback needs `--allow-remote` plus a bearer token. The SSE `id` is an encoded cursor (relay sort key plus delivery id), so cursors printed by `wait`/`tail` are interchangeable between relay and `serve` sources.
+The relay stays store-and-poll. On one machine, `hook-harness serve` is the only thing that polls it: it keeps a bounded in-memory ring buffer (1000 events or 1 hour) and streams events to local clients over SSE with per-client filters, `Last-Event-ID` replay and an explicit `gap` event. `wait`/`tail --source <url>` are a second `EventSource` implementation over that stream, so filtering, settle and cursors are unchanged. Loopback only by default; non-loopback needs `--allow-remote` plus a bearer token. The SSE `id` is an encoded cursor (relay sort key plus delivery id), so single-owner cursors printed by `wait`/`tail` are interchangeable between relay and `serve` sources. A multi-owner cursor is not: a `serve` stream has one position, so `--source` refuses it (saved or via `--after`); give `serve` and its clients different `--cursor` names.
 
 ## CLI
 

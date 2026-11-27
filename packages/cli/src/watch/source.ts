@@ -44,7 +44,7 @@ async function outOfScope(response: Response, owner: string): Promise<string> {
   const repos = [...(scopes ?? ["<current repos>"]), `${owner}/*`].join(",");
   return (
     `the token's repo scope does not cover owner "${owner}"${listed} (HTTP 403); ` +
-    `create one that does with hook-harness token create --login --repos ${repos}`
+    `create one that does with hook-harness token create --login --repos '${repos}'`
   );
 }
 

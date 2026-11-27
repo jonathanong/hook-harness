@@ -63,7 +63,7 @@ async function openToolSession(
       once,
     ),
     filters,
-    cursor: forOwners(started, owners, startFrom(undefined, input.since, ctx)),
+    cursor: forOwners(started, owners, () => startFrom(undefined, input.since, ctx)),
     intervalMs: INTERVAL_MS,
     ...timing,
     save: async (next) => {

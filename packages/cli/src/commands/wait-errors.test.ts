@@ -43,7 +43,7 @@ describe("wait failures", () => {
     const failure = wait(["--owner", "o"], h.ctx);
     await expect(failure).rejects.toThrow(
       `the token's repo scope does not cover owner "o" (it has a/*, b/c) (HTTP 403); ` +
-        "create one that does with hook-harness token create --login --repos a/*,b/c,o/*",
+        "create one that does with hook-harness token create --login --repos 'a/*,b/c,o/*'",
     );
   });
 

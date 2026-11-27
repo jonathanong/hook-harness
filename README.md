@@ -78,15 +78,15 @@ Field flags (`--event --action --reason --conclusion --branch --workflow --comma
 hook-harness wait --owner acme,acme-labs --on label:final-review:requested --no-payload
 ```
 
-The token's repo scope must cover every owner. When it doesn't, the CLI exits 1 and names the owner (and, on a current relay, the scopes the token has) and suggests `hook-harness token create --login --repos <scopes>,<owner>/*` (`--login` makes the CLI use the new token); `hook-harness login` doesn't help with that.
+The token's repo scope must cover every owner. When it doesn't, the CLI exits 1 and names the owner (and, on a current relay, the scopes the token has) and suggests `hook-harness token create --login --repos '<scopes>,<owner>/*'` (`--login` makes the CLI use the new token); `hook-harness login` doesn't help with that.
 
 ## Sharing one poller: `hook-harness serve`
 
 Several agents on one machine can share a single relay poller. `serve` polls the relay once and fans events out over Server-Sent Events; `wait` and `tail` read from it with `--source` (or `HOOK_HARNESS_SOURCE`) and print exactly what they print when polling the relay.
 
 ```sh
-hook-harness serve --owner acme,acme-labs                # 127.0.0.1:7391
-hook-harness wait --source http://127.0.0.1:7391 --event pull_request --command /plan
+hook-harness serve --owner acme,acme-labs --cursor relay # 127.0.0.1:7391
+hook-harness wait --source http://127.0.0.1:7391 --cursor plan --event pull_request --command /plan
 curl -N 'http://127.0.0.1:7391/events?event=push&branch=main'
 ```
 

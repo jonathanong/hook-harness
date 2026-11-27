@@ -100,7 +100,7 @@ export async function openSession(
     );
   }
   // An owner the saved cursor does not know yet starts from --since, else now.
-  const fresh = startFrom(undefined, str(values, "since"), ctx);
+  const fresh = () => startFrom(undefined, str(values, "since"), ctx);
   const cursor = url ? started : forOwners(started, owners, fresh);
   const query = {
     repos: list(values, "repo"),

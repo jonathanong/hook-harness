@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { jsonOf, mcpHarness, textOf } from "../test-helpers/mcp.ts";
 import { ev, page } from "../test-helpers/watch.ts";
-import { decodeCursor } from "../watch/cursor.ts";
+import { decodeCursor, encodeCursor } from "../watch/cursor.ts";
 
 let closer: (() => Promise<void>) | undefined;
 afterEach(async () => {
@@ -46,6 +46,17 @@ describe("several owners over MCP", () => {
       "b1",
     ]);
     expect(h.calls.urls).toHaveLength(2);
+  });
+
+  it("starts an owner the cursor lacks from since", async () => {
+    const h = await start(steps());
+    const owners = { a: { sk: "5", seen: [] }, c: { sk: "6", seen: [] } };
+    const after = encodeCursor({ sk: "5", seen: [], owners });
+    await h.call("get_events", { owner: "a,b", after, since: "1970-01-01T00:00:00.007Z" });
+    const starts = Object.fromEntries(
+      h.calls.urls.map((url) => [url.searchParams.get("owner"), url.searchParams.get("after")]),
+    );
+    expect(starts).toEqual({ a: "5", b: "7" });
   });
 
   it("wait_for_events collects from every owner", async () => {

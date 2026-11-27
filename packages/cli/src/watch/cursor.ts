@@ -33,12 +33,12 @@ export function combine(owners: Record<string, Position>): Cursor {
 
 /**
  * The cursor for exactly these owners. A single-owner cursor applies to every owner; an owner a
- * multi-owner cursor lacks starts at `fallback`; owners not asked for are dropped.
+ * multi-owner cursor lacks starts at `fallback()`; owners not asked for are dropped.
  */
-export function forOwners(cursor: Cursor, owners: string[], fallback: Position): Cursor {
+export function forOwners(cursor: Cursor, owners: string[], fallback: () => Position): Cursor {
   const pick = (owner: string): Position => {
     if (!cursor.owners) return { sk: cursor.sk, seen: cursor.seen };
-    return Object.hasOwn(cursor.owners, owner) ? cursor.owners[owner]! : fallback;
+    return Object.hasOwn(cursor.owners, owner) ? cursor.owners[owner]! : fallback();
   };
   if (owners.length === 1) return pick(owners[0]!);
   return combine(Object.fromEntries(owners.map((owner) => [owner, pick(owner)])));
