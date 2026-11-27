@@ -45,17 +45,21 @@ A bootstrap publish has no provenance attestation; later releases do.
 
 ## Releasing
 
-1. Bump `version` in `packages/cli/package.json` (and the plugin manifests) and merge to `main`.
-   That merge is the release; there is no manual step.
-2. `publish.yml` runs on any push to `main` that touches `packages/cli/package.json`. If npm
-   doesn't have that version yet, it runs `pnpm check` and `pnpm build`, then `npm publish` with
-   provenance. It installs npm 12 first because OIDC publishing requires npm 11.5.1 or newer.
-   (`pnpm publish` can't attach provenance in this setup.)
-3. If there is no `v<version>` GitHub release yet, it creates one on that commit with generated
-   notes.
-4. Steps already done are skipped, so a re-run (or `workflow_dispatch`) after a partial failure
-   finishes the job, and package.json changes that don't bump the version do nothing.
-5. `npm view hook-harness version` can lag by a minute or two.
+1. Run the Publish workflow by hand (Actions → Publish → Run workflow, or
+   `gh workflow run publish.yml -f bump=minor`) and pick the semver bump: `patch`, `minor`,
+   `major` or a pre-release. Don't bump versions in pull requests.
+2. On `main`, it runs `pnpm check`, then `npm version <bump>` in `packages/cli` and copies the
+   new version into the three plugin manifests (`.github/scripts/sync-plugin-version.mjs`).
+3. It commits `chore(release): v<version>`, tags `v<version>`, builds, and pushes the commit and
+   tag to `main` with the workflow's own token (`main` has no branch protection; add a bypass
+   token if that changes).
+4. It runs `npm publish` from `packages/cli` with provenance, then creates the `v<version>`
+   GitHub release with generated notes. It installs npm 12 first because OIDC publishing requires
+   npm 11.5.1 or newer. (`pnpm publish` can't attach provenance in this setup.)
+5. The npm trusted publisher names `publish.yml`, so keep that file name.
+6. If `npm publish` fails after the push, `main` already has the bump: publish that version from
+   a checkout of the tag rather than running the workflow again, which would bump again.
+7. `npm view hook-harness version` can lag by a minute or two.
 
 The relay is not part of this: deploy it with `hook-harness update` after relay changes merge.
 
