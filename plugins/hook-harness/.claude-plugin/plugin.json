@@ -6,8 +6,8 @@
     "name": "Jonathan Ong",
     "email": "jonathanrichardong@gmail.com"
   },
-  "homepage": "https://github.com/jonathanong/hook-harness",
-  "repository": "https://github.com/jonathanong/hook-harness",
+  "homepage": "https://github.com/jongleberry/hook-harness",
+  "repository": "https://github.com/jongleberry/hook-harness",
   "license": "MIT",
   "keywords": ["github", "webhooks", "events", "mcp", "automation"],
   "skills": "./skills/",

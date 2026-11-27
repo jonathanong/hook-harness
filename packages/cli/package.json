@@ -12,14 +12,14 @@
     "lambda",
     "webhooks"
   ],
-  "homepage": "https://github.com/jonathanong/hook-harness#readme",
+  "homepage": "https://github.com/jongleberry/hook-harness#readme",
   "bugs": {
-    "url": "https://github.com/jonathanong/hook-harness/issues"
+    "url": "https://github.com/jongleberry/hook-harness/issues"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jonathanong/hook-harness.git",
+    "url": "git+https://github.com/jongleberry/hook-harness.git",
     "directory": "packages/cli"
   },
   "bin": {

@@ -13,7 +13,7 @@ configured for a name that does not exist yet. Pick one of the two first-publish
 1. Sign in to npmjs.com as the account that should own the package.
 2. Go to <https://www.npmjs.com/settings/~/packages> (Packages, then "Trusted publishers" for a
    new package) and add a pending publisher for package name `hook-harness`.
-3. Choose GitHub Actions and enter: owner `jonathanong`, repository `hook-harness`, workflow
+3. Choose GitHub Actions and enter: owner `jongleberry`, repository `hook-harness`, workflow
    filename `publish.yml`, environment blank.
 4. Continue with "Releasing" below; the first release creates the package.
 
@@ -34,7 +34,7 @@ with a 404.
 Then add the trusted publisher (npm 11.10 or newer; prompts for 2FA):
 
 ```sh
-npm trust github hook-harness --repo jonathanong/hook-harness --file publish.yml --allow-publish
+npm trust github hook-harness --repo jongleberry/hook-harness --file publish.yml --allow-publish
 npm trust list hook-harness
 ```
 

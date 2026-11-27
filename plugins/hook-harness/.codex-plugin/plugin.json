@@ -7,8 +7,8 @@
     "email": "jonathanrichardong@gmail.com",
     "url": "https://github.com/jonathanong"
   },
-  "homepage": "https://github.com/jonathanong/hook-harness",
-  "repository": "https://github.com/jonathanong/hook-harness",
+  "homepage": "https://github.com/jongleberry/hook-harness",
+  "repository": "https://github.com/jongleberry/hook-harness",
   "license": "MIT",
   "keywords": ["github", "webhooks", "events", "mcp", "automation", "codex"],
   "skills": "./skills/",
@@ -20,9 +20,9 @@
     "developerName": "Jonathan Ong",
     "category": "Coding",
     "capabilities": ["Interactive", "Read"],
-    "websiteURL": "https://github.com/jonathanong/hook-harness",
-    "privacyPolicyURL": "https://github.com/jonathanong/hook-harness",
-    "termsOfServiceURL": "https://github.com/jonathanong/hook-harness",
+    "websiteURL": "https://github.com/jongleberry/hook-harness",
+    "privacyPolicyURL": "https://github.com/jongleberry/hook-harness",
+    "termsOfServiceURL": "https://github.com/jongleberry/hook-harness",
     "defaultPrompt": [
       "Wait for merge-queue ejections in my org",
       "Tell me when main CI fails",
