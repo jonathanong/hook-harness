@@ -1,4 +1,4 @@
-import { preset, type EventFilter } from "@hook-harness/protocol";
+import { preset, type Envelope, type EventFilter } from "@hook-harness/protocol";
 import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import type {
   CallToolResult,
@@ -10,8 +10,9 @@ import { resolveClient } from "../client.ts";
 import type { Ctx } from "../types.ts";
 import { collect } from "../watch/collect.ts";
 import { advance, encodeCursor } from "../watch/cursor.ts";
-import { matchesAny, startFrom, type Session } from "../watch/session.ts";
-import { relaySource } from "../watch/source.ts";
+import { forOwners } from "../watch/cursor.ts";
+import { ownersSource } from "../watch/owners.ts";
+import { matchesAny, ownerList, startFrom, type Session } from "../watch/session.ts";
 import { readCursor, writeCursor } from "../watch/store.ts";
 import type { ScopeInput, WaitInput } from "./schema.ts";
 
@@ -41,6 +42,7 @@ async function openToolSession(
   input: ScopeInput,
   ctx: Ctx,
   timing: { timeoutMs: number; settleMs: number },
+  once = false,
 ): Promise<Session> {
   const client = await resolveClient(ctx.env);
   const name = input.cursor_name;
@@ -49,15 +51,19 @@ async function openToolSession(
     ...((input.filters ?? []) as EventFilter[]),
     ...(input.on ?? []).map((name) => preset(name)!),
   ];
+  const owners = ownerList({ owner: [input.owner] });
+  const started = startFrom(input.after || stored, input.since, ctx);
   return {
-    source: relaySource(
+    source: ownersSource(
       ctx,
       client,
-      { owner: input.owner, repos: input.repos ?? [], payload: input.include_payload, filters },
+      { repos: input.repos ?? [], payload: input.include_payload, filters },
+      owners,
       INTERVAL_MS,
+      once,
     ),
     filters,
-    cursor: startFrom(input.after || stored, input.since, ctx),
+    cursor: forOwners(started, owners, () => startFrom(undefined, input.since, ctx)),
     intervalMs: INTERVAL_MS,
     ...timing,
     save: async (next) => {
@@ -113,19 +119,24 @@ export function waitForEvents(input: WaitInput, ctx: Ctx, extra: Extra): Promise
 export function getEvents(input: ScopeInput, ctx: Ctx, extra: Extra): Promise<CallToolResult> {
   return guarded(async () => {
     const scoped = cancellable(ctx, extra);
-    const session = await openToolSession(input, scoped, { timeoutMs: 0, settleMs: 0 });
-    const poll = session.source.poll(session.cursor.sk, Number);
-    const first = await poll.next();
-    await poll.return(undefined); // one poll only: never reaches the retry sleep
-    if (first.done) return fail(CANCELLED);
-    if ("error" in first.value) throw first.value.error;
-    const { page } = first.value;
-    const step = advance(session.cursor, page);
-    await session.save(step.next);
-    return ok({
-      events: step.fresh.filter((event) => matchesAny(session.filters, event)),
-      gap: page.gap,
-      cursor: encodeCursor(step.next),
-    });
+    const session = await openToolSession(input, scoped, { timeoutMs: 0, settleMs: 0 }, true);
+    // One poll per owner: leaving the loop stops the source before any retry sleep.
+    const expected = Object.keys(session.cursor.owners ?? {}).length || 1;
+    const answered = new Set<string | undefined>();
+    const events: Envelope[] = [];
+    let cursor = session.cursor;
+    let gap = false;
+    for await (const result of session.source.poll(cursor)) {
+      if ("error" in result) throw result.error;
+      const step = advance(cursor, result.page, result.owner);
+      cursor = step.next;
+      events.push(...step.fresh.filter((event) => matchesAny(session.filters, event)));
+      gap ||= result.page.gap;
+      answered.add(result.owner);
+      if (answered.size === expected) break;
+    }
+    if (answered.size < expected) return fail(CANCELLED);
+    await session.save(cursor);
+    return ok({ events, gap, cursor: encodeCursor(cursor) });
   });
 }

@@ -20,13 +20,13 @@ Reads GitHub events stored by a hook-harness relay (a Lambda plus DynamoDB, 1 da
 
 ## 2. Wait with a caller-owned cursor
 
-MCP `wait_for_events` inputs: `owner`, `repos?`, `filters?` (EventFilter[], OR'd; unknown keys are rejected), `after?` (cursor), `since?` (ISO time or duration like `2h`), `cursor_name?` (persist the cursor in a local state file instead of passing `after`), `include_payload?` (default true), `timeout_seconds?` (1–600, default 240) and `settle_seconds?` (0–60, default 5). `get_events` takes the same inputs minus the timeouts and runs a single poll. `filter_help` returns the filter reference with examples. CLI equivalent:
+MCP `wait_for_events` inputs: `owner` (several as a comma list; one cursor covers them all), `repos?`, `filters?` (EventFilter[], OR'd; unknown keys are rejected), `after?` (cursor), `since?` (ISO time or duration like `2h`), `cursor_name?` (persist the cursor in a local state file instead of passing `after`), `include_payload?` (default true), `timeout_seconds?` (1–600, default 240) and `settle_seconds?` (0–60, default 5). `get_events` takes the same inputs minus the timeouts and runs a single poll. `filter_help` returns the filter reference with examples. CLI equivalent:
 
 ```sh
 hook-harness wait --owner acme --filter '<json>' --after "$CURSOR" --timeout 30m
 ```
 
-Both return `{"events":[...],"gap":false,"cursor":"...","timedOut":true?}`. The CLI exits 0 in all cases (read the JSON); exit 1 means auth failure, invalid cursor, or relay unreachable until the timeout. The MCP tools report those as tool errors; an auth error means the user must run `hook-harness login`.
+Both return `{"events":[...],"gap":false,"cursor":"...","timedOut":true?}`. The CLI exits 0 in all cases (read the JSON); exit 1 means auth failure, invalid cursor, or relay unreachable until the timeout. The MCP tools report those as tool errors. A 401 means the user must run `hook-harness login`; a 403 names an owner the token's repo scope doesn't cover, which needs a new token from `hook-harness token create --login --repos ...,<owner>/*`, not a login.
 
 Rules:
 

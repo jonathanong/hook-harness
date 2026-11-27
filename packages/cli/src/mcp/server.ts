@@ -15,7 +15,8 @@ const WAIT_DESCRIPTION = `Block until GitHub events matching the filters arrive 
 Resuming: always pass the returned \`cursor\` back as \`after\` on your next call so no event is missed or repeated; without \`after\` (and \`since\`) it starts from now. The server keeps no state.
 After the first match it keeps collecting for settle_seconds, then returns. If nothing matches within timeout_seconds it returns timedOut:true with events [] and a fresh cursor; just call again.
 gap:true means your cursor is older than the relay's one-day retention and events may have been lost: sweep with the GitHub API, then continue from the returned cursor.
-Authentication errors mean the user must run \`hook-harness login\`.
+\`owner\` takes a comma list to read several owners under one cursor.
+A 401 error means the user must run \`hook-harness login\`. A 403 error means the token's repo scope does not cover an owner: the user needs a token that does (\`hook-harness token create --login --repos ...\`), not a login.
 ${UNTRUSTED}`;
 
 const GET_DESCRIPTION = `Poll the hook-harness relay once, without blocking, and return {events, gap, cursor} for matching events since \`after\` (or \`since\`, or now). Use wait_for_events to block instead. Pass the returned \`cursor\` back as \`after\`; gap:true means sweep with the GitHub API.

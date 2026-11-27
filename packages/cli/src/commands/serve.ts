@@ -6,7 +6,7 @@ import { LOGIN_HELP } from "../watch/flags.ts";
 import { openSession } from "../watch/session.ts";
 
 const SPEC = {
-  owner: { type: "string" },
+  owner: { type: "string", multiple: true },
   repo: { type: "string", multiple: true },
   "no-payload": { type: "boolean" },
   cursor: { type: "string" },
@@ -35,7 +35,8 @@ agents on one machine share one poller. Point wait/tail at it with --source <url
 The buffer keeps the last 1000 events or 1 hour, whichever is smaller (memory only).
 
 Scope and upstream:
-  --owner <owner>          Required: GitHub owner whose events to read
+  --owner <owner>          Required: GitHub owner whose events to read (repeatable or comma
+                           list; one upstream cursor covers every owner)
   --repo <owner/name>      Limit to a repo (repeatable or comma list)
   --no-payload             Do not fetch webhook payloads (clients then see payloadOmitted)
   --cursor <name>          Named cursor state file for the upstream position (default "default")

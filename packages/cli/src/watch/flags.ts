@@ -3,7 +3,7 @@ import { preset, PRESETS, type EventFilter } from "@hook-harness/protocol";
 import { list, UsageError, type Values } from "../args.ts";
 
 export const WATCH_SPEC = {
-  owner: { type: "string" },
+  owner: { type: "string", multiple: true },
   repo: { type: "string", multiple: true },
   event: { type: "string", multiple: true },
   action: { type: "string", multiple: true },
@@ -35,7 +35,9 @@ export const WATCH_SPEC = {
 } as const;
 
 export const WATCH_FLAGS = `Scope:
-  --owner <owner>          Required: GitHub owner whose events to read
+  --owner <owner>          Required: GitHub owner whose events to read. Repeatable or comma list:
+                           every owner is polled and one cursor covers them all; each event
+                           names its owner. Ignored with --source (serve has its own --owner)
   --repo <owner/name>      Limit to a repo (repeatable or comma list)
 
 Filters (one filter from these flags; events matching ANY filter are kept; none = all events):

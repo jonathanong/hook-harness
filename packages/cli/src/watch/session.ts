@@ -4,9 +4,9 @@ import { list, str, UsageError, type Values } from "../args.ts";
 import { resolveClient } from "../client.ts";
 import { parseDuration, parseSince } from "../duration.ts";
 import type { Ctx } from "../types.ts";
-import { decodeCursor, encodeCursor, type Cursor } from "./cursor.ts";
+import { decodeCursor, encodeCursor, forOwners, type Cursor } from "./cursor.ts";
 import { buildFilters, withRepos } from "./flags.ts";
-import { relaySource } from "./source.ts";
+import { ownersSource } from "./owners.ts";
 import { sseSource } from "./sse-source.ts";
 import { readCursor, writeCursor } from "./store.ts";
 import type { EventSource } from "./types.ts";
@@ -48,6 +48,11 @@ async function startCursor(values: Values, ctx: Ctx, name: string): Promise<Curs
   return startFrom(encoded, str(values, "since"), ctx);
 }
 
+/** `--owner` values (repeatable or comma list), lowercased and deduplicated. */
+export function ownerList(values: Values): string[] {
+  return [...new Set(list(values, "owner").map((owner) => owner.toLowerCase()))];
+}
+
 /** The `--source` / `HOOK_HARNESS_SOURCE` URL; `serve` itself always polls the relay. */
 function sourceUrl(values: Values, ctx: Ctx, relayOnly: boolean): string | undefined {
   const url = relayOnly
@@ -73,9 +78,9 @@ export async function openSession(
   relayOnly = false,
 ): Promise<Session> {
   const url = sourceUrl(values, ctx, relayOnly);
-  const owner = str(values, "owner") ?? "";
+  const owners = ownerList(values);
   // A `serve` source is already scoped to its own --owner.
-  if (!owner && !url) throw new UsageError("--owner is required");
+  if (owners.length === 0 && !url) throw new UsageError("--owner is required");
   // Through a `serve` the repo scope is a per-client filter rather than a relay query.
   const filters = url
     ? withRepos(buildFilters(values), list(values, "repo"))
@@ -86,9 +91,18 @@ export async function openSession(
   const name = str(values, "cursor") ?? "default";
   const persist = !str(values, "after") || str(values, "cursor") !== undefined;
   const client = url ? undefined : await resolveClient(ctx.env);
-  const cursor = await startCursor(values, ctx, name);
+  const started = await startCursor(values, ctx, name);
+  // A `serve` stream has one position; resuming it would fold the per-owner positions into one.
+  if (url && started.owners) {
+    throw new UsageError(
+      `cursor "${name}" covers owners ${Object.keys(started.owners).join(", ")}; ` +
+        "use another --cursor with --source",
+    );
+  }
+  // An owner the saved cursor does not know yet starts from --since, else now.
+  const fresh = () => startFrom(undefined, str(values, "since"), ctx);
+  const cursor = url ? started : forOwners(started, owners, fresh);
   const query = {
-    owner,
     repos: list(values, "repo"),
     payload: values["no-payload"] !== true,
     // `serve` polls once for clients with different filters, so it must not narrow the relay.
@@ -97,8 +111,8 @@ export async function openSession(
   const token = ctx.env.HOOK_HARNESS_SOURCE_TOKEN ?? "";
   return {
     source: client
-      ? relaySource(ctx, client, query, intervalMs)
-      : sseSource(ctx, { url: url!, token, filters, cursor, intervalMs }),
+      ? ownersSource(ctx, client, query, owners, intervalMs)
+      : sseSource(ctx, { url: url!, token, filters, intervalMs }),
     filters,
     cursor,
     intervalMs,

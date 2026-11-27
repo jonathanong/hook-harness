@@ -51,3 +51,27 @@ export const page = (events: Envelope[], cursor = "sk1", gap = false): EventsPag
 
 export const lastLine = (h: Harness): Record<string, unknown> =>
   JSON.parse(h.out.at(-1)!) as Record<string, unknown>;
+
+/**
+ * A logged-in harness whose relay answers each `owner` from its own steps (the last repeats).
+ * `calls` records every request in order, as `watchHarness` does.
+ */
+export async function ownersHarness(
+  steps: Record<string, Step[]>,
+): Promise<Harness & { calls: Calls }> {
+  const h = await watchHarness([page([])]);
+  const counts: Record<string, number> = {};
+  const answer = h.ctx.fetch;
+  h.ctx.fetch = async (input, init) => {
+    const owner = new URL(String(input)).searchParams.get("owner")!;
+    const own = steps[owner]!;
+    counts[owner] = (counts[owner] ?? 0) + 1;
+    let step: Step = own[Math.min(counts[owner] - 1, own.length - 1)]!;
+    if (typeof step === "function") step = step(counts[owner]);
+    await answer(input, init); // records the call
+    if (step instanceof Error) throw step;
+    if (step instanceof Response) return step;
+    return Response.json(step);
+  };
+  return h;
+}

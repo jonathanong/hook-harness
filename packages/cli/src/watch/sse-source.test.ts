@@ -5,6 +5,7 @@ import { wait } from "../commands/wait.ts";
 import { harness } from "../test-helpers/ctx.ts";
 import { ev } from "../test-helpers/watch.ts";
 import { encodeCursor } from "./cursor.ts";
+import { writeCursor } from "./store.ts";
 
 const frame = (id: string, sk: string, over = {}) =>
   `id: ${encodeCursor({ sk, seen: [id] })}\nevent: envelope\ndata: ${JSON.stringify(ev(id, 1, over))}\n\n`;
@@ -98,6 +99,19 @@ describe("wait/tail --source", () => {
     await expect(wait(["--source", "ftp://x"], h.ctx)).rejects.toThrow("invalid --source");
     await expect(wait(["--source", "nonsense"], h.ctx)).rejects.toThrow("invalid --source");
     await expect(wait(["--source", "http://x/"], h.ctx)).rejects.toThrow("serve rejected");
+  });
+
+  it("refuses a multi-owner cursor, saved or passed with --after", async () => {
+    const { h, calls } = await sourced([sse()]);
+    const owners = { a: { sk: "1", seen: [] }, b: { sk: "2", seen: [] } };
+    const cursor = encodeCursor({ sk: "1", seen: [], owners });
+    const args = ["--source", "http://x"];
+    await expect(wait([...args, "--after", cursor], h.ctx)).rejects.toThrow(
+      'cursor "default" covers owners a, b; use another --cursor with --source',
+    );
+    await writeCursor(h.ctx.env, "multi", cursor);
+    await expect(wait([...args, "--cursor", "multi"], h.ctx)).rejects.toThrow('cursor "multi"');
+    expect(calls).toHaveLength(0);
   });
 
   it("returns quietly when interrupted", async () => {

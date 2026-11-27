@@ -37,6 +37,16 @@ describe("wait failures", () => {
     }
   });
 
+  it("names the owner and the token's scopes when the owner is out of scope", async () => {
+    const body = { error: "forbidden", owner: "o", scopes: ["a/*", "b/c"] };
+    const h = await watchHarness([Response.json(body, { status: 403 })]);
+    const failure = wait(["--owner", "o"], h.ctx);
+    await expect(failure).rejects.toThrow(
+      `the token's repo scope does not cover owner "o" (it has a/*, b/c) (HTTP 403); ` +
+        "create one that does with hook-harness token create --login --repos 'a/*,b/c,o/*'",
+    );
+  });
+
   it("exits 130 when interrupted before delivering", async () => {
     const h = await watchHarness([
       () => {

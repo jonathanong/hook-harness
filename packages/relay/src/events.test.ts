@@ -69,7 +69,9 @@ describe("GET /events auth", () => {
 
   it("requires an owner the token covers", async () => {
     expect((await route(get({}), deps)).statusCode).toBe(400);
-    expect((await route(get({ owner: "x" }), deps)).statusCode).toBe(403);
+    const denied = await route(get({ owner: "x" }), deps);
+    expect(denied.statusCode).toBe(403);
+    expect(JSON.parse(denied.body!)).toEqual({ error: "forbidden", owner: "x", scopes: ["o/r"] });
     for (const repos of [["o/*"], ["*"], ["O/r"]]) {
       token({ repos });
       expect((await route(get({ owner: "o" }), deps)).statusCode).toBe(200);

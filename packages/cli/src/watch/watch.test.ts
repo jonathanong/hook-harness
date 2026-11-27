@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { defaultCtx } from "../ctx.ts";
 import { parseDuration, parseSince } from "../duration.ts";
-import { ev, page } from "../test-helpers/watch.ts";
-import { advance, decodeCursor, encodeCursor } from "./cursor.ts";
+import { resolveClient } from "../client.ts";
+import { ev, page, watchHarness } from "../test-helpers/watch.ts";
+import { advance, decodeCursor, encodeCursor, forOwners } from "./cursor.ts";
+import { relaySource } from "./source.ts";
 import { readCursor, stateDir, writeCursor } from "./store.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -34,6 +36,65 @@ describe("cursor", () => {
     const { fresh, next } = advance({ sk: "a", seen: ["x"] }, page([], "b"));
     expect(fresh).toEqual([]);
     expect(next).toEqual({ sk: "b", seen: ["x"] });
+  });
+});
+
+describe("multi-owner cursor", () => {
+  const raw = (data: unknown) => Buffer.from(JSON.stringify(data)).toString("base64url");
+  const owners = { a: { sk: "200#x", seen: ["x"] }, b: { sk: "0100#y", seen: ["y"] } };
+
+  it("encodes as v2 and summarizes with the earliest owner", () => {
+    const cursor = decodeCursor(raw({ v: 2, owners }));
+    expect(cursor).toEqual({ sk: "0100#y", seen: ["x", "y"], owners });
+    expect(JSON.parse(Buffer.from(encodeCursor(cursor), "base64url").toString())).toEqual({
+      v: 2,
+      owners,
+    });
+  });
+
+  it("advances only the page's owner", () => {
+    const cursor = decodeCursor(raw({ v: 2, owners }));
+    const { fresh, next } = advance(cursor, page([ev("x", 1), ev("z", 2)], "300"), "a");
+    expect(fresh.map((event) => event.id)).toEqual(["z"]);
+    expect(next.owners).toEqual({ a: { sk: "300", seen: ["x", "z"] }, b: owners.b });
+  });
+
+  it("ignores inherited properties as owner names", () => {
+    const cursor = decodeCursor(raw({ v: 2, owners }));
+    const fallback = { sk: "50", seen: [] };
+    expect(forOwners(cursor, ["a", "constructor"], () => fallback).owners).toEqual({
+      a: owners.a,
+      constructor: fallback,
+    });
+    const { next } = advance(cursor, page([ev("q", 1)], "400"), "toString");
+    expect(next).toEqual({ sk: "400", seen: ["q"] });
+  });
+
+  it("rejects malformed v2 cursors", () => {
+    for (const data of [
+      { v: 2, owners: { a: owners.a } },
+      { v: 2, owners: { a: owners.a, b: { sk: 1, seen: [] } } },
+      { v: 2, owners: { a: owners.a, b: { sk: "1", seen: [1] } } },
+      { v: 2, owners: { a: owners.a, b: null } },
+      { v: 2, owners: null },
+      { v: 3, sk: "1", seen: [] },
+      null,
+    ]) {
+      expect(() => decodeCursor(raw(data))).toThrow("invalid cursor");
+    }
+  });
+});
+
+describe("relay source", () => {
+  it("sleeps its interval between polls when given no delay", async () => {
+    const h = await watchHarness([page([], "s1")]);
+    const client = await resolveClient(h.ctx.env);
+    const source = relaySource(h.ctx, client, { owner: "o", repos: [], payload: true }, 5000);
+    const poll = source.poll({ sk: "1", seen: [] });
+    await poll.next();
+    await poll.next();
+    expect(h.calls.times[1]! - h.calls.times[0]!).toBe(5000);
+    await poll.return(undefined);
   });
 });
 

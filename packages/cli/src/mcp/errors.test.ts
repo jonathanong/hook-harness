@@ -17,12 +17,23 @@ async function start(steps: Parameters<typeof mcpHarness>[0]) {
 }
 
 describe("error mapping", () => {
-  it.each([401, 403])("maps HTTP %i to a tool error naming hook-harness login", async (status) => {
-    const h = await start([new Response("no", { status })]);
+  it("maps HTTP 401 to a tool error naming hook-harness login", async () => {
+    const h = await start([new Response("no", { status: 401 })]);
     for (const tool of ["wait_for_events", "get_events"]) {
       const result = await h.call(tool, { owner: "o" });
       expect(result.isError).toBe(true);
       expect(textOf(result)).toContain("hook-harness login");
+    }
+  });
+
+  it("maps HTTP 403 to a tool error naming the owner and token create", async () => {
+    const h = await start([new Response("no", { status: 403 })]);
+    for (const tool of ["wait_for_events", "get_events"]) {
+      const result = await h.call(tool, { owner: "o" });
+      expect(result.isError).toBe(true);
+      expect(textOf(result)).toContain('does not cover owner "o"');
+      expect(textOf(result)).toContain("token create --login --repos '<current repos>,o/*'");
+      expect(textOf(result)).not.toContain("run hook-harness login");
     }
   });
 

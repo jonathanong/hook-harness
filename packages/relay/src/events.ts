@@ -20,7 +20,8 @@ export async function handleEvents(event: UrlEvent, deps: Deps): Promise<UrlResu
   const query = event.queryStringParameters ?? {};
   const owner = query["owner"];
   if (!owner) return fail(400, "owner is required");
-  if (!tokenAllowsOwner(scopes, owner)) return fail(403, "forbidden");
+  // The caller holds this token, so naming its own scopes tells it nothing new.
+  if (!tokenAllowsOwner(scopes, owner)) return json(403, { error: "forbidden", owner, scopes });
 
   // `after` is a previous cursor (`<15-digit ms>#<id>`) or a bare epoch-ms start time. A trailing
   // `!` (see SKIP_OVERLAP) resumes exactly at the cursor instead of replaying the overlap.
