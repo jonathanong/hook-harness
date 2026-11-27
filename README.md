@@ -38,7 +38,20 @@ codex plugin marketplace add jongleberry/ratchet-stack --ref main
 codex plugin add hook-harness@ratchet-stack
 ```
 
-If you installed it from the `harness-plugins` marketplace (the old name of `ratchet-stack`), add `ratchet-stack` and install `hook-harness@ratchet-stack`; installs keyed on `@harness-plugins` no longer update. If you added this repository as a marketplace before, remove it and reinstall. Claude Code uninstalls a marketplace's plugins when you remove it:
+If you installed it from `harness-plugins` (the old name of `ratchet-stack`), that install no longer updates. Add `ratchet-stack` first, then remove `harness-plugins` and reinstall from `ratchet-stack`. Removing a marketplace uninstalls every plugin installed from it, so reinstall any others you still use from `ratchet-stack` too:
+
+```bash
+claude plugin marketplace add jongleberry/ratchet-stack
+claude plugin marketplace remove harness-plugins
+claude plugin install hook-harness@ratchet-stack
+
+codex plugin marketplace add jongleberry/ratchet-stack --ref main
+codex plugin remove hook-harness@harness-plugins
+codex plugin marketplace remove harness-plugins
+codex plugin add hook-harness@ratchet-stack
+```
+
+If you added this repository as a marketplace before, remove it and reinstall. Claude Code uninstalls a marketplace's plugins when you remove it:
 
 ```bash
 claude plugin marketplace add jongleberry/ratchet-stack
