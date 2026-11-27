@@ -1,12 +1,24 @@
 name: Publish
 
-# A merged version bump in packages/cli/package.json is the release: publish to npm, then tag and
-# create the GitHub release. Re-running is safe; steps already done are skipped.
+# Run by hand to release: bump the CLI version (and the plugin manifests), commit and tag it on
+# main, publish to npm, then create the GitHub release. The file name is the npm trusted
+# publisher's, so keep it.
 on:
-  push:
-    branches: [main]
-    paths: [packages/cli/package.json]
   workflow_dispatch:
+    inputs:
+      bump:
+        description: Semver bump type
+        type: choice
+        required: true
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+          - premajor
+          - preminor
+          - prepatch
+          - prerelease
 
 concurrency:
   group: publish
@@ -17,14 +29,17 @@ permissions:
 
 jobs:
   publish:
-    name: publish to npm
+    name: release to npm
     runs-on: ubuntu-slim
     timeout-minutes: 15
     permissions:
-      contents: write # tag and GitHub release
+      contents: write # release commit, tag and GitHub release
       id-token: write # npm trusted publishing (OIDC); no NPM_TOKEN
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -32,31 +47,36 @@ jobs:
           cache: pnpm
       # Trusted publishing needs npm >= 11.5.1. pnpm publish can't attach provenance here, so npm publishes.
       - run: npm install -g npm@12.2.2
-      - name: What is left to do
-        id: state
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - name: Configure git
         run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Bump versions, commit, tag
+        id: bump
+        env:
+          BUMP: ${{ inputs.bump }}
+        run: |
+          (cd packages/cli && npm version "$BUMP" --no-git-tag-version)
           version="$(node -p "require('./packages/cli/package.json').version")"
+          manifests=".claude-plugin/plugin.json plugins/hook-harness/.claude-plugin/plugin.json plugins/hook-harness/.codex-plugin/plugin.json"
+          node .github/scripts/sync-plugin-version.mjs
+          # shellcheck disable=SC2086 # split the list on purpose
+          pnpm exec oxfmt $manifests
+          # shellcheck disable=SC2086
+          git add packages/cli/package.json $manifests
+          git commit -m "chore(release): v$version"
+          git tag -a "v$version" -m "v$version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          if npm view "hook-harness@$version" version >/dev/null 2>&1; then
-            echo "published=true" >> "$GITHUB_OUTPUT"
-          fi
-          if gh release view "v$version" >/dev/null 2>&1; then
-            echo "released=true" >> "$GITHUB_OUTPUT"
-          fi
-      - if: steps.state.outputs.published != 'true'
-        run: pnpm install --frozen-lockfile
-      - if: steps.state.outputs.published != 'true'
-        run: pnpm check
-      - if: steps.state.outputs.published != 'true'
-        run: pnpm build
+      # Built after the bump so the bundle reports the new version.
+      - run: pnpm build
+      - run: git push origin HEAD:main --follow-tags
       # dist/ is fully bundled and there are no runtime dependencies, so npm can publish it as is.
-      - if: steps.state.outputs.published != 'true'
-        run: npm publish
+      - run: npm publish
         working-directory: packages/cli
-      - if: steps.state.outputs.released != 'true'
+      - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.state.outputs.version }}
-        run: gh release create "v$VERSION" --target "$GITHUB_SHA" --generate-notes
+          VERSION: ${{ steps.bump.outputs.version }}
+        run: gh release create "v$VERSION" --title "v$VERSION" --generate-notes
