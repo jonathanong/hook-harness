@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import pkg from "../package.json" with { type: "json" };
 import { UsageError } from "./args.ts";
 import { createClients } from "./aws/clients.ts";
 import { defaultCtx } from "./ctx.ts";
@@ -15,6 +16,18 @@ describe("main", () => {
     expect(await main(["help"], h.ctx)).toBe(0);
     expect(h.out).toHaveLength(4);
     expect(h.out[0]).toContain("Commands:");
+  });
+
+  it("prints the package version, as text or JSON", async () => {
+    const h = await harness();
+    expect(await main(["--version"], h.ctx)).toBe(0);
+    expect(await main(["-V"], h.ctx)).toBe(0);
+    expect(await main(["version"], h.ctx)).toBe(0);
+    expect(await main(["version", "--json"], h.ctx)).toBe(0);
+    expect(h.out).toEqual([pkg.version, pkg.version, pkg.version, `{"version":"${pkg.version}"}`]);
+    expect(pkg.version).toMatch(/^\d+\.\d+\.\d+/);
+    expect(await main(["--version", "--nope"], h.ctx)).toBe(2);
+    expect(h.err[0]).toContain("version takes only --json");
   });
 
   it("rejects unknown commands, including prototype names", async () => {

@@ -1,3 +1,4 @@
+import pkg from "../package.json" with { type: "json" };
 import { UsageError } from "./args.ts";
 import { deploy, update } from "./commands/deploy.ts";
 import { login } from "./commands/login.ts";
@@ -37,6 +38,7 @@ Commands:
   tail        Stream matching events as NDJSON (primary interface)
   serve       Local daemon: poll once, fan events out over SSE (wait/tail --source)
   mcp         Stdio MCP server with wait_for_events / get_events tools
+  version     Print the CLI version (--json for {"version": ...}; also --version, -V)
 
 Run \`hook-harness <command> --help\` for flags.`;
 
@@ -51,6 +53,9 @@ export async function main(
     ctx.out(USAGE);
     return name === undefined ? 1 : 0;
   }
+  if (name === "version" || name === "--version" || name === "-V") {
+    return printVersion(rest, ctx);
+  }
   const command = Object.hasOwn(commands, name) ? commands[name] : undefined;
   if (!command) {
     ctx.err(`error: unknown command "${name}"\n\n${USAGE}`);
@@ -63,4 +68,14 @@ export async function main(
     ctx.err(`error: ${message}`);
     return error instanceof UsageError ? 2 : 1;
   }
+}
+
+function printVersion(args: string[], ctx: Ctx): number {
+  const json = args.length === 1 && args[0] === "--json";
+  if (args.length > 0 && !json) {
+    ctx.err(`error: version takes only --json\n\n${USAGE}`);
+    return 2;
+  }
+  ctx.out(json ? JSON.stringify({ version: pkg.version }) : pkg.version);
+  return 0;
 }
