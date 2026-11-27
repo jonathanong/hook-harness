@@ -26,29 +26,42 @@ Requires Node 24+. The package bundles the relay Lambda code and CloudFormation 
 
 The plugin gives an agent the `hook-harness mcp` server (`wait_for_events`, `get_events`) and a `hook-harness` skill that teaches it to log in, wait with a caller-owned cursor, write filters and treat payloads as untrusted.
 
-The plugin installs from the shared [`jonathanong/harness-plugins`](https://github.com/jonathanong/harness-plugins) marketplace.
+The plugin installs from the shared [`jongleberry/ratchet-stack`](https://github.com/jongleberry/ratchet-stack) marketplace.
 
 ```bash
 # Claude Code
-claude plugin marketplace add jonathanong/harness-plugins
-claude plugin install hook-harness@harness-plugins
+claude plugin marketplace add jongleberry/ratchet-stack
+claude plugin install hook-harness@ratchet-stack
 
 # Codex
-codex plugin marketplace add jonathanong/harness-plugins --ref main
-codex plugin add hook-harness@harness-plugins
+codex plugin marketplace add jongleberry/ratchet-stack --ref main
+codex plugin add hook-harness@ratchet-stack
+```
+
+If you installed it from `harness-plugins` (the old name of `ratchet-stack`), that install no longer updates. Add `ratchet-stack` first, then remove `harness-plugins` and reinstall from `ratchet-stack`. Removing a marketplace uninstalls every plugin installed from it, so reinstall any others you still use from `ratchet-stack` too:
+
+```bash
+claude plugin marketplace add jongleberry/ratchet-stack
+claude plugin marketplace remove harness-plugins
+claude plugin install hook-harness@ratchet-stack
+
+codex plugin marketplace add jongleberry/ratchet-stack --ref main
+codex plugin remove hook-harness@harness-plugins
+codex plugin marketplace remove harness-plugins
+codex plugin add hook-harness@ratchet-stack
 ```
 
 If you added this repository as a marketplace before, remove it and reinstall. Claude Code uninstalls a marketplace's plugins when you remove it:
 
 ```bash
-claude plugin marketplace add jonathanong/harness-plugins
+claude plugin marketplace add jongleberry/ratchet-stack
 claude plugin marketplace remove hook-harness
-claude plugin install hook-harness@harness-plugins
+claude plugin install hook-harness@ratchet-stack
 
-codex plugin marketplace add jonathanong/harness-plugins --ref main
+codex plugin marketplace add jongleberry/ratchet-stack --ref main
 codex plugin remove hook-harness@hook-harness   # or hook-harness@jonathanong
 codex plugin marketplace remove hook-harness    # or jonathanong
-codex plugin add hook-harness@harness-plugins
+codex plugin add hook-harness@ratchet-stack
 ```
 
 The MCP server runs `npx -y hook-harness mcp`. Log in once with `hook-harness login` (see [docs/github-app.md](docs/github-app.md) for tokens). Optional: `hook-harness serve` runs a local SSE daemon.
