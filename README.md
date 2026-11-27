@@ -2,6 +2,8 @@
 
 GitHub events in, agent runs out.
 
+hook-harness is part of [ratchet-stack](https://github.com/jongleberry/ratchet-stack), a set of plugins and tools for autonomous coding agents.
+
 A GitHub App sends webhooks to a small AWS Lambda, which stores a short summary of each event in DynamoDB for one day. A runner on your machine polls those events and, when a rule matches, renders a prompt and starts Claude Code, Codex, or any other CLI in a git worktree.
 
 - **No control plane.** One Lambda function URL and one DynamoDB table with TTL. Typical cost: cents per month.
