@@ -37,9 +37,9 @@
     "build": "node build.mjs"
   },
   "devDependencies": {
-    "@aws-sdk/client-cloudformation": "3.1171.0",
+    "@aws-sdk/client-cloudformation": "3.1173.0",
     "@aws-sdk/client-dynamodb": "3.1173.0",
-    "@aws-sdk/client-lambda": "3.1171.0",
+    "@aws-sdk/client-lambda": "3.1173.0",
     "@aws-sdk/lib-dynamodb": "3.1173.0",
     "@hook-harness/protocol": "workspace:*",
     "@hook-harness/relay": "workspace:*",
