@@ -51,8 +51,8 @@ A bootstrap publish has no provenance attestation; later releases do.
 2. On `main`, it runs `pnpm check`, then `npm version <bump>` in `packages/cli` and copies the
    new version into the three plugin manifests (`.github/scripts/sync-plugin-version.mjs`).
 3. It commits `chore(release): v<version>`, tags `v<version>`, builds, and pushes the commit and
-   tag to `main` with the workflow's own token (`main` has no branch protection; add a bypass
-   token if that changes).
+   tag to `main` with `RELEASE_TOKEN`, an org secret: a fine-grained token with Contents read and
+   write on this repository, whose owner must be on the bypass list of any ruleset on `main`.
 4. It runs `npm publish` from `packages/cli` with provenance, then creates the `v<version>`
    GitHub release with generated notes. It installs npm 12 first because OIDC publishing requires
    npm 11.5.1 or newer. (`pnpm publish` can't attach provenance in this setup.)

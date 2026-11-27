@@ -33,13 +33,24 @@ jobs:
     runs-on: ubuntu-slim
     timeout-minutes: 15
     permissions:
-      contents: write # release commit, tag and GitHub release
+      contents: read
       id-token: write # npm trusted publishing (OIDC); no NPM_TOKEN
     steps:
+      # The release commit and tag are pushed with RELEASE_TOKEN (an org secret): a PAT whose owner
+      # can bypass any rules on main, and whose pushes trigger CI.
+      - name: Check RELEASE_TOKEN is set
+        env:
+          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          if [ -z "$RELEASE_TOKEN" ]; then
+            echo "::error::RELEASE_TOKEN secret is not set. It needs Contents read and write on this repository." >&2
+            exit 1
+          fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
           fetch-depth: 0
+          token: ${{ secrets.RELEASE_TOKEN }}
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -77,6 +88,6 @@ jobs:
         working-directory: packages/cli
       - name: Create GitHub release
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           VERSION: ${{ steps.bump.outputs.version }}
         run: gh release create "v$VERSION" --title "v$VERSION" --generate-notes
