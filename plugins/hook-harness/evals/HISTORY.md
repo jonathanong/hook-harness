@@ -4,7 +4,7 @@ Newest first.
 
 ## 2026-11-28: rerun after review fixes
 
-- Commit `924b96f`. Claude Code 2.1.332, default agent model; judge haiku. 3 attempts per case, one arm. Cost: agent $2.01, judges $0.04.
+- Commit `45930d9` (measured as `924b96f`, which a rebase rewrote; the plugin tree is the same and only CLI code under it changed). Claude Code 2.1.332, default agent model; judge haiku. 3 attempts per case, one arm. Cost: agent $2.01, judges $0.04.
 - Scores: every case passed 3 of 3. The skill loaded 3 of 3 on every case except `lookalike-pr-ci` (0 of 3).
 - Changes since the previous entry, all to the skill's text after review:
   - It identifies a run by `runId`, not `headSha`.

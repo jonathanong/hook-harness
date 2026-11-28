@@ -7,7 +7,7 @@ These are `claude plugin eval` cases for the `hook-harness` skill. Each case ask
 | Run                 | Value                                                    |
 | ------------------- | -------------------------------------------------------- |
 | Date                | 2026-11-28                                               |
-| Commit              | `924b96f`                                                |
+| Commit              | `45930d9`                                                |
 | Agent model         | Claude Code 2.1.332 default (not recorded by the runner) |
 | Judge model         | haiku (runner default)                                   |
 | Attempts            | 3 per case, one arm (`--ablation none`)                  |
@@ -52,6 +52,6 @@ claude plugin eval plugins/hook-harness --runs 3 --ablation none --no-publish --
 claude plugin eval plugins/hook-harness --runs 1 --ablation none --case 'deploy-*' --no-publish --trust-plugin   # one case, cheap
 ```
 
-A full run costs about $1.60 and takes 2 minutes with `-j 6`. Raw results land in `plugins/hook-harness/evals/results/`, which git ignores.
+A full run (six cases, three attempts) costs about $2.05 and takes 2 to 3 minutes with `-j 6`. Raw results land in `plugins/hook-harness/evals/results/`, which git ignores.
 
 See [HISTORY.md](HISTORY.md) for every run and [AGENTS.md](AGENTS.md) for the rules.
