@@ -107,7 +107,7 @@ for await (const batch of pollEvents({
 | `pollEvents(options)`      | Long-polls one owner or several until `signal` aborts. Yields `{owner, events, cursor, gap}` once per owner's poll (empty or not): each event once, only events matching `filters`/`on`; `gap` is that owner's. With several owners, `cursor` covers all of them. It uses the same format as `hook-harness wait`'s, so either can resume the other, single- or multi-owner. Each owner starts at its position in `after`, else `since`, else now. |
 | `pollPages(options)`       | The raw page loop under `pollEvents`, for one owner: yields `{page}` per poll, follows a cut-short page at once.                                                                                                                                                                                                                                                                                                                                  |
 
-Options: `url`, `token`, `owner` (`pollEvents` also takes an array), and optionally `repos`, `filters` (`EventFilter[]`), `on` (preset names as `--on` takes them), `payload` (default true), `after`, `since` (`Date`), `limit`, `signal`, `fetch`, and for the pollers `intervalMs` (default 5000) and `delay`. An unknown preset throws `TypeError`.
+Options: `url` (`https:`, or `http:` only to `localhost`, `127.0.0.1` or `[::1]`; anything else throws `TypeError` so the token is never sent in cleartext), `token`, `owner` (`pollEvents` also takes an array), and optionally `repos`, `filters` (`EventFilter[]`), `on` (preset names as `--on` takes them), `payload` (default true), `after`, `since` (`Date`), `limit`, `signal`, `fetch`, and for the pollers `intervalMs` (default 5000) and `delay`. An unknown preset throws `TypeError`.
 
 HTTP errors carry `status`:
 
@@ -115,6 +115,7 @@ HTTP errors carry `status`:
 - `BadRequestError` (400) is a missing `owner` or a bad `after` or `filters`, with the relay's reason in the message. It extends `RelayError`, and the pollers throw it too.
 - `RelayError` is any other HTTP status. It and network errors (`TypeError`) are transient: the pollers yield `{error}` and retry with exponential backoff capped at 5 minutes, without end. There is no separate outage signal: count consecutive `{error}` batches, or bound the wait with `signal`.
 - With several owners, an error the pollers throw stops every owner's poll.
+- Aborting `signal` ends the pollers without yielding an error for the request it cut short.
 
 `Envelope`, `EventFilter` and `EventsPage` are exported as types.
 

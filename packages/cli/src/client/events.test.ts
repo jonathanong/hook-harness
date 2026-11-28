@@ -126,6 +126,24 @@ describe("fetchEventsPage 400", () => {
   });
 });
 
+describe("fetchEventsPage URL", () => {
+  it("refuses to send the token in cleartext except to a loopback host", async () => {
+    const r = relay(() => Response.json(page([])));
+    for (const url of ["http://relay.example", "ftp://relay.example"]) {
+      await expect(fetchEventsPage({ ...conn, url, fetch: r.fetch })).rejects.toThrow(
+        new TypeError(
+          `refusing to send the token to ${url.split(":")[0]}://relay.example; use https`,
+        ),
+      );
+    }
+    expect(r.urls).toHaveLength(0);
+    for (const url of ["http://localhost:8080/base", "http://127.0.0.1", "http://[::1]:9"]) {
+      await fetchEventsPage({ ...conn, url, fetch: r.fetch });
+    }
+    expect(r.urls.map((u) => u.pathname)).toEqual(["/base/events", "/events", "/events"]);
+  });
+});
+
 describe("resolveClient", () => {
   it("reads process.env by default, which overrides client.json", async () => {
     const dir = mkdtempSync(join(tmpdir(), "hh-client-"));

@@ -160,6 +160,23 @@ describe("pollPages", () => {
     expect(r.afters).toEqual(["0", "c1", "c2"]);
   });
 
+  it("throws for a cleartext URL before polling", async () => {
+    const r = relay([() => Response.json(page([]))]);
+    const source = pollPages({ ...conn, url: "http://relay.example", fetch: r.fetch, after: "0" });
+    await expect(source.next()).rejects.toBeInstanceOf(TypeError);
+    expect(r.afters).toHaveLength(0);
+  });
+
+  it("ends without an error when the signal aborts mid-request", async () => {
+    const controller = new AbortController();
+    const fetch = (async () => {
+      controller.abort();
+      throw new DOMException("aborted", "AbortError");
+    }) as unknown as typeof globalThis.fetch;
+    const source = pollPages({ ...conn, fetch, signal: controller.signal, after: "0" });
+    expect(await source.next()).toEqual({ done: true, value: undefined });
+  });
+
   it("stops when the signal aborts, waking from the default sleep", async () => {
     const controller = new AbortController();
     const r = relay([() => Response.json(page([]))]);

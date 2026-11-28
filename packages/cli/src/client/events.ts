@@ -77,6 +77,20 @@ async function outOfScope(response: Response, owner: string): Promise<OutOfScope
   return new OutOfScopeError(message, owner, scopes);
 }
 
+const LOOPBACK = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
+/**
+ * The `events` endpoint under `url`. Throws `TypeError` for a URL that would send the token in
+ * cleartext: anything but `https:`, except `http:` to a loopback host.
+ */
+export function eventsUrl(url: string): URL {
+  const base = new URL(url.endsWith("/") ? url : `${url}/`);
+  if (base.protocol !== "https:" && !(base.protocol === "http:" && LOOPBACK.has(base.hostname))) {
+    throw new TypeError(`refusing to send the token to ${base.protocol}//${base.host}; use https`);
+  }
+  return new URL("events", base);
+}
+
 /** The relay names what it rejected (`invalid after`, `invalid filters`, ...) in `error`. */
 async function badRequest(response: Response): Promise<BadRequestError> {
   const body = (await response.json().catch(() => undefined)) as { error?: unknown } | undefined;
@@ -98,8 +112,9 @@ export async function fetchEventsPage(options: FetchEventsPageOptions): Promise<
   if (options.payload === false) params.set("payload", "0");
   const filters = relayFilters(queryFilters(options));
   if (filters) params.set("filters", filters);
-  const base = options.url.endsWith("/") ? options.url : `${options.url}/`;
-  const response = await (options.fetch ?? fetch)(`${base}events?${params}`, {
+  const target = eventsUrl(options.url);
+  target.search = String(params);
+  const response = await (options.fetch ?? fetch)(target.href, {
     headers: { authorization: `Bearer ${options.token}` },
     signal: options.signal ?? null,
   });

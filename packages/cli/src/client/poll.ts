@@ -13,6 +13,7 @@ import {
 import { AuthError, BadRequestError } from "./errors.ts";
 import {
   backoffMs,
+  eventsUrl,
   fetchEventsPage,
   queryFilters,
   type Connection,
@@ -48,6 +49,7 @@ const defaultSleep = (ms: number, signal: AbortSignal): Promise<void> =>
 export async function* pollPages(options: PollPagesOptions): AsyncGenerator<PageResult> {
   const { limit = 100, intervalMs = 5000, sleep = defaultSleep } = options;
   const signal = options.signal ?? new AbortController().signal;
+  eventsUrl(options.url); // Throws now rather than being retried as a request failure.
   let after = options.after;
   let failures = 0;
   while (!signal.aborted) {
@@ -60,6 +62,8 @@ export async function* pollPages(options: PollPagesOptions): AsyncGenerator<Page
       result = { page };
       wait = (page.more ?? page.events.length >= limit) ? 0 : undefined;
     } catch (error) {
+      // Stopped on purpose: the aborted fetch is not a failure to report.
+      if (signal.aborted) return;
       if (error instanceof AuthError || error instanceof BadRequestError) throw error;
       failures += 1;
       result = { error: error as Error };
