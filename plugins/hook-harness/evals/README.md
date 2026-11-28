@@ -4,25 +4,25 @@ These are `claude plugin eval` cases for the `hook-harness` skill. Each case ask
 
 ## Current results
 
-| Run                 | Value                                                                                                                          |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Date                | 2026-11-28                                                                                                                     |
-| Commit              | `93816c9` plus this suite's skill fix, before the rebase onto `d8c85c9` (which changed only the skill's run-identity sentence) |
-| Agent model         | Claude Code 2.1.332 default (not recorded by the runner)                                                                       |
-| Judge model         | haiku (runner default)                                                                                                         |
-| Attempts            | 3 per case, one arm (`--ablation none`)                                                                                        |
-| Cost (agent, judge) | $1.62, $0.02                                                                                                                   |
+| Run                 | Value                                                    |
+| ------------------- | -------------------------------------------------------- |
+| Date                | 2026-11-28                                               |
+| Commit              | `924b96f`                                                |
+| Agent model         | Claude Code 2.1.332 default (not recorded by the runner) |
+| Judge model         | haiku (runner default)                                   |
+| Attempts            | 3 per case, one arm (`--ablation none`)                  |
+| Cost (agent, judge) | $2.01, $0.04                                             |
 
-| Case                          | Priority | Skill loaded | Answer passed                             |
-| ----------------------------- | -------- | ------------ | ----------------------------------------- |
-| `workflow-publish-main`       | high     | 3 of 3       | 3 of 3                                    |
-| `deploy-vercel-production`    | high     | 3 of 3       | 3 of 3                                    |
-| `release-upstream-tag`        | high     | 3 of 3       | 3 of 3                                    |
-| `external-ci-circleci-status` | high     | 3 of 3       | 3 of 3                                    |
-| `lookalike-pr-ci`             | medium   | 0 of 3       | 3 of 3                                    |
-| `lookalike-pr-ci-named` †     | high     | 5 of 5       | 5 of 5 (control without the rule: 1 of 5) |
+| Case                          | Priority | Skill loaded | Answer passed |
+| ----------------------------- | -------- | ------------ | ------------- |
+| `workflow-publish-main`       | high     | 3 of 3       | 3 of 3        |
+| `deploy-vercel-production`    | high     | 3 of 3       | 3 of 3        |
+| `release-upstream-tag`        | high     | 3 of 3       | 3 of 3        |
+| `external-ci-circleci-status` | high     | 3 of 3       | 3 of 3        |
+| `lookalike-pr-ci`             | medium   | 0 of 3       | 3 of 3        |
+| `lookalike-pr-ci-named`       | high     | 3 of 3       | 3 of 3        |
 
-† From the 2026-11-28 fix-vs-control run in `HISTORY.md` (commit `cf95279` plus the case, 5 attempts per arm, agent $1.10, judges $0.01), not from the table's main run.
+The rule `lookalike-pr-ci-named` tests also has a control: the same skill with that rule removed passed 1 of 5 against 5 of 5 with it, in an earlier run on the same day (`HISTORY.md`).
 
 ## What each case checks
 

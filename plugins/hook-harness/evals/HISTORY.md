@@ -2,6 +2,17 @@
 
 Newest first.
 
+## 2026-11-28: rerun after review fixes
+
+- Commit `924b96f`. Claude Code 2.1.332, default agent model; judge haiku. 3 attempts per case, one arm. Cost: agent $2.01, judges $0.04.
+- Scores: every case passed 3 of 3. The skill loaded 3 of 3 on every case except `lookalike-pr-ci` (0 of 3).
+- Changes since the previous entry, all to the skill's text after review:
+  - It identifies a run by `runId`, not `headSha`.
+  - The run lookup passes `--repo`.
+  - It notes that `deployment:<env>@<branch>` needs a deployer that sends a branch ref.
+  - AGENTS.md adds priority targets and the control-arm rule.
+- What it showed: the review edits did not move any case. Earlier entries name commits that the rebase onto `d8c85c9` rewrote, so they are not in the branch history.
+
 ## 2026-11-28: the pr-shepherd-missing rule, fix against control
 
 - Commit: `cf95279` plus the new case. Same models. 5 attempts per arm. The control arm is a copy of the plugin with the rule's sentence removed from the skill. Cost: agent $1.10, judges $0.01.
