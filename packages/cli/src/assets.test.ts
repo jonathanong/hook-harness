@@ -104,7 +104,7 @@ describe("build output", () => {
       'import("hook-harness/client").then((m) => console.log(Object.keys(m).sort().join()))';
     const { stdout } = await run("node", ["--input-type=module", "-e", script], { cwd: app });
     expect(stdout.trim()).toBe(
-      "AuthError,BadRequestError,NotLoggedInError,OutOfScopeError,RelayError,UnauthorizedError," +
+      "AuthError,BadRequestError,InvalidCursorError,NotLoggedInError,OutOfScopeError,RelayError,UnauthorizedError," +
         "fetchEventsPage,pollEvents,pollPages,resolveClient",
     );
     await rm(app, { recursive: true });

@@ -38,6 +38,11 @@ export class BadRequestError extends RelayError {
   override name = "BadRequestError";
 }
 
+/** An `after` cursor that is not one `pollEvents` or `hook-harness wait`/`tail` produced. */
+export class InvalidCursorError extends Error {
+  override name = "InvalidCursorError";
+}
+
 /** No relay URL and token in the environment or the saved `hook-harness login`. */
 export class NotLoggedInError extends Error {
   override name = "NotLoggedInError";

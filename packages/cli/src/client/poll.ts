@@ -107,7 +107,7 @@ async function* tagged(
  * Polls each owner like `pollPages`, but yields each event once (the relay's overlap replay is
  * dropped) and only events matching `filters`/`on`, so it is exact even when filters are too big
  * to send. Yields a batch for every poll, empty or not, naming the owner it came from; with
- * several owners, `cursor` covers them all. Throws for a bad `after` or an unknown preset.
+ * several owners, `cursor` covers them all. Throws `InvalidCursorError` for a bad `after` and `TypeError` for an unknown preset.
  */
 export async function* pollEvents(options: PollEventsOptions): AsyncGenerator<EventsBatch> {
   const filters = queryFilters(options);
