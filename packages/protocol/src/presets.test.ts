@@ -33,6 +33,26 @@ describe("presets", () => {
     expect(on("dependabot-pr", pr)).toBe(false);
   });
 
+  it("workflow:<name>[@<branch>] matches that workflow's finished runs, any conclusion", () => {
+    const run = {
+      event: "workflow_run",
+      action: "completed",
+      workflow: "Publish",
+      headRef: "main",
+    };
+    for (const conclusion of ["success", "failure", "cancelled"]) {
+      expect(on("workflow:Publish", { ...run, conclusion })).toBe(true);
+    }
+    expect(on("workflow:Publish", { ...run, action: "requested" })).toBe(false);
+    expect(on("workflow:Publish", { ...run, workflow: "CI" })).toBe(false);
+    expect(on("workflow:Publish@main", run)).toBe(true);
+    expect(on("workflow:Publish@main", { ...run, headRef: "feature" })).toBe(false);
+    expect(preset("workflow:Release @ prod@main")).toMatchObject({ workflow: "Release @ prod" });
+    expect(preset("workflow:@main")).toMatchObject({ workflow: "@main" });
+    expect(preset("workflow:Publish@")).toBeUndefined();
+    expect(preset("workflow:")).toBeUndefined();
+  });
+
   it("a slash command matches a new comment with that command", () => {
     const comment = { event: "issue_comment", action: "created", command: "/shepherd" };
     expect(on("/Shepherd", comment)).toBe(true);

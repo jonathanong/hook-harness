@@ -35,7 +35,8 @@ export const PRESETS: Record<string, EventFilter> = {
 
 /**
  * A preset name, or a parameterised one: `/shepherd` (a new comment with that command),
- * `label:<name>` (that label added to an issue or PR), `review-requested:<login or team>`.
+ * `label:<name>` (that label added to an issue or PR), `review-requested:<login or team>`,
+ * `workflow:<name>[@<branch>]` (a run of that Actions workflow finished, on that branch).
  */
 export function preset(name: string): EventFilter | undefined {
   if (/^\/[\w-]+$/.test(name)) {
@@ -44,5 +45,15 @@ export function preset(name: string): EventFilter | undefined {
   const [kind, arg] = name.split(/:(.*)/s, 2);
   if (kind === "label" && arg) return { action: "labeled", label: arg };
   if (kind === "review-requested" && arg) return { ...PRESETS["review-requested"], reviewer: arg };
+  if (kind === "workflow" && arg) return workflowRun(arg);
   return Object.hasOwn(PRESETS, name) ? PRESETS[name] : undefined;
+}
+
+/** Any conclusion: waiting for a run to finish is the point (success, failure or cancelled). */
+function workflowRun(arg: string): EventFilter | undefined {
+  const at = arg.lastIndexOf("@");
+  const workflow = at > 0 ? arg.slice(0, at) : arg;
+  const branch = at > 0 ? arg.slice(at + 1) : undefined;
+  if (branch === "") return undefined;
+  return { event: "workflow_run", action: "completed", workflow, ...(branch ? { branch } : {}) };
 }

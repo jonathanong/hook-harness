@@ -44,7 +44,8 @@ Filters (one filter from these flags; events matching ANY filter are kept; none 
   --on <preset>            Add a preset filter (repeatable or comma list): ejection (merge-queue
                            ejection, not a merge), main-failure (failed workflow run, or another App's check suite, on main),
                            dependabot-pr (new Dependabot PR), review-requested[:<login|team>],
-                           label:<name> (label added to an issue or PR), /<command> (new comment)
+                           label:<name> (label added to an issue or PR), /<command> (new comment),
+                           workflow:<name>[@<branch>] (a run of that workflow finished, any conclusion)
   --event --action --reason --conclusion --branch --workflow --command --sender --label
   --reviewer --sha --ref --app --pr
                            Repeatable or comma lists
@@ -138,7 +139,12 @@ export function buildFilters(values: Values): EventFilter[] {
   const presets = list(values, "on").map((name) => {
     const found = preset(name);
     if (!found) {
-      const known = [...Object.keys(PRESETS), "label:<name>", "/<command>"].join(", ");
+      const known = [
+        ...Object.keys(PRESETS),
+        "label:<name>",
+        "/<command>",
+        "workflow:<name>[@<branch>]",
+      ].join(", ");
       throw new UsageError(`unknown --on "${name}"; use one of ${known}`);
     }
     return found;
