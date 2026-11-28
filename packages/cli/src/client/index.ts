@@ -5,6 +5,7 @@ export { resolveClient, type ClientConfig } from "./config.ts";
 export {
   AuthError,
   BadRequestError,
+  InvalidCursorError,
   NotLoggedInError,
   OutOfScopeError,
   RelayError,

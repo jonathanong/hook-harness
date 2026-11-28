@@ -1,5 +1,7 @@
 import type { Envelope, EventsPage } from "@hook-harness/protocol";
 
+import { InvalidCursorError } from "../client/errors.ts";
+
 /** One relay stream's resume point: sort key plus delivery IDs inside the relay's overlap. */
 export interface Position {
   sk: string;
@@ -79,7 +81,7 @@ export function decodeCursor(text: string): Cursor {
   ) {
     return combine(owners as Record<string, Position>);
   }
-  throw new Error(INVALID);
+  throw new InvalidCursorError(INVALID);
 }
 
 function step(position: Position, page: EventsPage): { fresh: Envelope[]; next: Position } {

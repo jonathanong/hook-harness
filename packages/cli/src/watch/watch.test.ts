@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { InvalidCursorError } from "../client/errors.ts";
 import { defaultCtx } from "../ctx.ts";
 import { parseDuration, parseSince } from "../duration.ts";
 import { resolveClient } from "../client/config.ts";
@@ -80,7 +81,7 @@ describe("multi-owner cursor", () => {
       { v: 3, sk: "1", seen: [] },
       null,
     ]) {
-      expect(() => decodeCursor(raw(data))).toThrow("invalid cursor");
+      expect(() => decodeCursor(raw(data))).toThrow(InvalidCursorError);
     }
   });
 });
