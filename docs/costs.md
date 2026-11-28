@@ -49,7 +49,7 @@ Defined in [`packages/relay/template.yaml`](../packages/relay/template.yaml):
 
 ## Choosing `PROVISIONED` vs. `PAY_PER_REQUEST`
 
-- **Use default `PROVISIONED` 25/25** when your AWS account has the 25 RCU / 25 WCU Always Free tier available and sustained webhook volume stays under ~25 KB/s (~2.5 webhooks/sec at 10 KB, with DynamoDB burst capacity absorbing short spikes).
+- **Use default `PROVISIONED` 25/25** when your AWS account has the 25 RCU / 25 WCU Always Free tier available, sustained webhook volume stays under ~25 KB/s (~2.5 webhooks/sec at 10 KB), and combined read load from all pollers stays under 25 RCU/s (about 12.5 RCU/s per poller at 10 KB items and the 15 s default interval). DynamoDB burst capacity absorbs short spikes.
 - **Use `--billing-mode PAY_PER_REQUEST`** when:
   - your AWS account already consumes its 25 RCU / 25 WCU free tier on other tables; or
   - you have an org-wide install with payloads that can burst past 25 WCU/sec and trigger throttling (`relay-throttles` alarm).
