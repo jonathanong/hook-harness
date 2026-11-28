@@ -9,7 +9,7 @@ hook-harness is a relay plus a CLI. GitHub events land in a short-lived store, a
 ```text
 GitHub App webhook -> Lambda (function URL) -> DynamoDB (1-day TTL)
                                   ^
-agent (e.g. /triage-loop) -- hook-harness wait / tail / mcp / serve -- polls GET /events
+agent -- hook-harness wait / tail / mcp / serve -- polls GET /events
 ```
 
 There is no runner. The agent that consumes events decides what to do with them, owns its cursor, and runs its own work.
@@ -133,7 +133,7 @@ The relay stays store-and-poll. On one machine, `hook-harness serve` is the only
 
 - `GET /events` streams `id: <cursor>`, `event: envelope`, `data: <envelope JSON>` with query-param filtering (`event action repo branch command reason conclusion workflow sender label reviewer sha ref on pr minAssociation ignoreSender`, plus repeatable `filter=<EventFilter JSON>`, OR'd).
 - `GET /healthz` returns `{ok, upstream: {lastPollAt, lastError, cursor}, clients, buffered}`. Relay errors back off like `tail`; `SIGINT`/`SIGTERM` close streams and save the cursor.
-- Trust model: binds to loopback only and refuses another `--host` unless `--allow-remote` and `--auth-token` are given (`Authorization: Bearer`; `HOOK_HARNESS_SERVE_TOKEN` and `HOOK_HARNESS_SOURCE_TOKEN` keep tokens off command lines). Without a token any local process can read events (`--no-payload` drops payloads). Requests with an `Origin` header or non-loopback `Host` header are rejected to block browsers and DNS rebinding.
+- Trust model: binds to loopback only and refuses another `--host` unless `--allow-remote` and `--auth-token` are given (`Authorization: Bearer`; `HOOK_HARNESS_SERVE_TOKEN` and `HOOK_HARNESS_SOURCE_TOKEN` keep tokens off command lines). Without a token, any local process can read events (`--no-payload` drops payloads), and requests with an `Origin` header or non-loopback `Host` header are rejected to block browsers and DNS rebinding.
 - Cursors: the SSE `id` is an encoded cursor (relay sort key plus delivery id), so single-owner cursors printed by `wait`/`tail` are interchangeable between relay and `serve` sources. A multi-owner cursor is not: a `serve` stream has one position, so `--source` refuses it (saved or via `--after`); give `serve` and its clients different `--cursor` names.
 
 ## CLI
@@ -166,11 +166,11 @@ Deployment state lives in `~/.config/hook-harness/deployments/<stack>.json`.
 
 ## Consumers
 
-The first consumer is Vouchington's `/triage-loop` session. It:
+A typical autonomous consumer (for example, a triage or PR-shepherd session):
 
-- runs `hook-harness wait` in the background, filtering on merge-queue ejections, failed `main` workflow runs and `/shepherd` comments;
+- runs `hook-harness wait` (or MCP `wait_for_events`) in the background, filtering on merge-queue ejections, failed `main` workflow runs, and slash-command comments;
 - owns its cursor and delivery-ID dedupe;
-- sweeps the GitHub API on `gap: true` and on its own 6-hour cycle;
+- sweeps the GitHub API on `gap: true` and on a periodic fallback cadence;
 - runs scheduled prompts and dispatches subagents itself;
 - checks author trust for comment-driven work.
 
@@ -199,4 +199,4 @@ Repo setup:
 | Comment-command abuse on a public repo | Consumers check `authorAssociation`/`author` (private org members appear as CONTRIBUTOR/NONE)   |
 | Prompt injection via event strings     | Payload text is untrusted; `--no-payload`; external-data labelling                              |
 | Token leak                             | Read-only, scoped, expiring tokens; `token revoke` takes effect on the next poll                |
-| Volume and cost                        | The App subscription list is the volume control; on-demand billing                              |
+| Volume and cost                        | The App subscription list is the volume control; on-demand billing (see [costs.md](costs.md))   |
