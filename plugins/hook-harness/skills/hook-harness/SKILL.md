@@ -46,7 +46,7 @@ hook-harness wait --owner acme --repo acme/app --on workflow:Publish@main --sinc
 ```
 
 - Take the start point from before the dispatch (`--since`, or a cursor saved earlier), so a run that finishes quickly is not missed.
-- Another run of the same workflow can finish first, even on the same commit, so identify the run by `runId`, not `headSha`. Right after dispatching, look it up once (`gh run list --workflow <file> --branch <branch> --event workflow_dispatch --limit 1 --json databaseId`), then accept only the event whose `runId` matches; wait again on the returned cursor for any other run.
+- Another run of the same workflow can finish first, even on the same commit, so identify the run by `runId`, not `headSha`. Right after dispatching, look it up once (`gh run list --repo <owner>/<repo> --workflow <file> --branch <branch> --event workflow_dispatch --limit 1 --json databaseId`), then accept only the event whose `runId` matches; wait again on the returned cursor for any other run.
 - When you cannot block (a hook forbids wait loops, or you check in on a schedule), save the cursor and call `get_events` once at each check-in instead of polling `gh run view`. The CLI has no single-poll mode; `hook-harness wait --after "$CURSOR" --timeout 1s --interval 1s` returns within about a second.
 
 ## 4. Filters
