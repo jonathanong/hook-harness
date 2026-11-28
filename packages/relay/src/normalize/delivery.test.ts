@@ -30,6 +30,17 @@ describe("deployments", () => {
     expect(JSON.stringify(envelope)).not.toContain("SECRET");
   });
 
+  it("stores a full branch ref bare and leaves a SHA ref as is", () => {
+    const full = fixture(
+      "deployment_status.created",
+      (p) => (p.deployment.ref = "refs/heads/main"),
+    );
+    expect(deploymentStatus(full, ctx).headRef).toBe("main");
+    expect(deployment(full, ctx).headRef).toBe("main");
+    const sha = fixture("deployment_status.created", (p) => (p.deployment.ref = "abc123"));
+    expect(deploymentStatus(sha, ctx).headRef).toBe("abc123");
+  });
+
   it("falls back to the deployment's environment and the environment URL", () => {
     const payload = fixture("deployment_status.created");
     payload.deployment_status = { state: "failure", target_url: "", environment_url: "https://e" };

@@ -25,18 +25,18 @@ See [docs/design.md](docs/design.md) for the full architecture, envelope schema,
 
 `--on` adds named filter presets (repeatable or comma lists; OR'd with other filters). The MCP tools take the same names as `on`.
 
-| Preset                                               | Matches                                                                                |
-| ---------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `ejection`                                           | Merge-queue ejection (`pull_request` `dequeued` with a failure reason, not `MERGE`)    |
-| `main-failure`                                       | Failed `workflow_run`, or another App's `check_suite` (not Actions'), on `main`        |
-| `dependabot-pr`                                      | Dependabot opened or reopened a PR                                                     |
-| `review-requested`, `review-requested:<login\|team>` | A review was requested (from that reviewer)                                            |
-| `label:<name>`                                       | That label was added to an issue or PR                                                 |
-| `/<command>`                                         | A new comment starting with that command, e.g. `/shepherd`                             |
-| `workflow:<name>[@<branch>]`                         | A run of that Actions workflow finished (any conclusion), e.g. `workflow:Publish@main` |
-| `deployment`, `deployment:<environment>[@<branch>]`  | A deployment finished (`success`, `failure` or `error`), e.g. `deployment:production`  |
-| `release`, `release:<tag>`                           | A release was published (with that tag)                                                |
-| `status:<context>`                                   | A commit status from external CI finished, e.g. `status:ci/circleci: build`            |
+| Preset                                               | Matches                                                                                                                                                        |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ejection`                                           | Merge-queue ejection (`pull_request` `dequeued` with a failure reason, not `MERGE`)                                                                            |
+| `main-failure`                                       | Failed `workflow_run`, or another App's `check_suite` (not Actions'), on `main`                                                                                |
+| `dependabot-pr`                                      | Dependabot opened or reopened a PR                                                                                                                             |
+| `review-requested`, `review-requested:<login\|team>` | A review was requested (from that reviewer)                                                                                                                    |
+| `label:<name>`                                       | That label was added to an issue or PR                                                                                                                         |
+| `/<command>`                                         | A new comment starting with that command, e.g. `/shepherd`                                                                                                     |
+| `workflow:<name>[@<branch>]`                         | A run of that Actions workflow finished (any conclusion), e.g. `workflow:Publish@main`                                                                         |
+| `deployment`, `deployment:<environment>[@<branch>]`  | A deployment finished (`success`, `failure` or `error`), e.g. `deployment:production`; `@<branch>` needs a deployer that sends a branch, not a SHA, as the ref |
+| `release`, `release:<tag>`                           | A release was published (with that tag)                                                                                                                        |
+| `status:<context>`                                   | A commit status from external CI finished, e.g. `status:ci/circleci: build`                                                                                    |
 
 ```sh
 hook-harness wait --owner acme --on ejection,main-failure,dependabot-pr,/shepherd --on label:needs-review --no-payload

@@ -1,11 +1,15 @@
 import type { Normalizer } from "../types.ts";
-import { build } from "./common.ts";
+import { build, stripHeads } from "./common.ts";
 
+/**
+ * `ref` is whatever the deployer sent: a branch, `refs/heads/<branch>`, a tag or a SHA. Branches are
+ * stored bare so `deployment:<env>@<branch>` matches; a SHA-only deployment has no branch.
+ */
 export const deployment: Normalizer = (payload, ctx) => {
   const d = payload.deployment;
   return build("deployment", payload, ctx, {
     headSha: d.sha,
-    headRef: d.ref,
+    headRef: stripHeads(d.ref),
     environment: d.environment,
     url: d.url,
   });
@@ -17,7 +21,7 @@ export const deploymentStatus: Normalizer = (payload, ctx) => {
   const d = payload.deployment;
   return build("deployment_status", payload, ctx, {
     headSha: d.sha,
-    headRef: d.ref,
+    headRef: stripHeads(d.ref),
     environment: status.environment ?? d.environment,
     conclusion: status.state,
     url: status.target_url || status.environment_url || null,
