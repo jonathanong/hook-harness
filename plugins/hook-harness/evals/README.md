@@ -25,7 +25,7 @@ These are `claude plugin eval` cases for the `hook-harness` skill. Each case ask
 
 The rule `lookalike-pr-ci-named` tests also has a control: the same skill with that rule removed passed 1 of 5 against 5 of 5 with it, in an earlier run on the same day (`HISTORY.md`).
 
-‡ From the 2026-11-28 run-ID fix-vs-control run in `HISTORY.md`, not from the table's main run. Both arms pass, so it shows no harm, not a benefit.
+‡ From the 2026-11-28 run-ID review-fix rerun against control in `HISTORY.md`, not from the table's main run. Both arms pass, so it shows no harm, not a benefit.
 
 ## What each case checks
 
