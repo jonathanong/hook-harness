@@ -1,6 +1,6 @@
 {
   "name": "hook-harness",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Pull-based GitHub webhook relay for coding agents: deploy the relay, then wait, tail, serve or mcp.",
   "keywords": [
     "agents",
