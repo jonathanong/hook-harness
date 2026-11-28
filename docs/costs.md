@@ -1,8 +1,8 @@
 # Cost model
 
-**Headline:** **$0/month** within AWS Always Free tiers (default `PROVISIONED` 25/25 table), or **~$0.12–$4.80/month** on DynamoDB On-Demand (`PAY_PER_REQUEST`) from a personal repo up to a busy 20,000-webhook/day org.
+**Headline:** **~$0.12–$4.80/month** on DynamoDB On-Demand (`PAY_PER_REQUEST`, the default) from a personal repo up to a busy 20,000-webhook/day org — or **$0/month** within AWS Always Free tiers if you opt into `--billing-mode PROVISIONED` (25/25).
 
-The only cost trap is leaving a stack on the default `PROVISIONED` 25/25 table in an AWS account whose account-wide 25 RCU / 25 WCU free tier is already used by other tables (~$14.23/month). In that case, switch to `--billing-mode PAY_PER_REQUEST`.
+On-Demand is the default because it scales automatically to bursts, costs $0 when idle, and avoids a ~$14.23/month surprise if your AWS account's account-wide 25 RCU / 25 WCU Always Free tier is already consumed by other tables. Existing stacks deployed on `PROVISIONED` keep their mode on routine updates until you pass `--billing-mode PAY_PER_REQUEST`.
 
 ## Monthly estimates by workload
 
@@ -22,14 +22,14 @@ Assumes 30-day months, steady (uniform) webhook arrivals, default `--interval 15
 
 Defined in [`packages/relay/template.yaml`](../packages/relay/template.yaml):
 
-| Resource                               | Configuration                                                            | Pricing basis (`us-east-1`, 2026-11-27)                                                                             |
-| -------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| Lambda + Function URL                  | `nodejs24.x`, `arm64`, 256 MB, 10s timeout (no API Gateway)              | Free tier: 1M req + 400,000 GB-s/mo. Paid: $0.20 / 1M req + $0.0000133334 / GB-s                                    |
-| DynamoDB table (`PROVISIONED` default) | 25 RCU / 25 WCU, 1-day TTL, no GSIs, no PITR                             | Free tier: 25 RCU + 25 WCU + 25 GB/mo (account-wide). Paid: $0.00065/WCU-hr + $0.00013/RCU-hr (~$14.23/mo at 25/25) |
-| DynamoDB table (`PAY_PER_REQUEST`)     | On-Demand, 1-day TTL, no GSIs, no PITR                                   | $0.625 / 1M WRU, $0.125 / 1M RRU (no request free tier); 25 GB storage free, then $0.25/GB-mo                       |
-| DynamoDB TTL deletions                 | Enabled on `expiresAt` (1 day)                                           | Free (0 WCU/WRU)                                                                                                    |
-| CloudWatch Logs                        | 1-day retention, `SystemLogLevel: WARN`, payloads never logged           | Free tier: 5 GB ingestion + 5 GB archive/mo (effectively $0)                                                        |
-| CloudWatch Alarms + SNS (optional)     | Created only with `--alarm-email`: 3 standard alarms + 1 SNS email topic | Free tier: 10 standard alarm metrics + 1,000 SNS emails/mo. Paid: $0.30/mo for 3 alarms                             |
+| Resource                                   | Configuration                                                            | Pricing basis (`us-east-1`, 2026-11-27)                                                                             |
+| ------------------------------------------ | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| Lambda + Function URL                      | `nodejs24.x`, `arm64`, 256 MB, 10s timeout (no API Gateway)              | Free tier: 1M req + 400,000 GB-s/mo. Paid: $0.20 / 1M req + $0.0000133334 / GB-s                                    |
+| DynamoDB table (`PAY_PER_REQUEST` default) | On-Demand, 1-day TTL, no GSIs, no PITR                                   | $0.625 / 1M WRU, $0.125 / 1M RRU (no request free tier); 25 GB storage free, then $0.25/GB-mo                       |
+| DynamoDB table (`PROVISIONED` optional)    | 25 RCU / 25 WCU, 1-day TTL, no GSIs, no PITR                             | Free tier: 25 RCU + 25 WCU + 25 GB/mo (account-wide). Paid: $0.00065/WCU-hr + $0.00013/RCU-hr (~$14.23/mo at 25/25) |
+| DynamoDB TTL deletions                     | Enabled on `expiresAt` (1 day)                                           | Free (0 WCU/WRU)                                                                                                    |
+| CloudWatch Logs                            | 1-day retention, `SystemLogLevel: WARN`, payloads never logged           | Free tier: 5 GB ingestion + 5 GB archive/mo (effectively $0)                                                        |
+| CloudWatch Alarms + SNS (optional)         | Created only with `--alarm-email`: 3 standard alarms + 1 SNS email topic | Free tier: 10 standard alarm metrics + 1,000 SNS emails/mo. Paid: $0.30/mo for 3 alarms                             |
 
 ## What drives cost
 
@@ -47,16 +47,15 @@ Defined in [`packages/relay/template.yaml`](../packages/relay/template.yaml):
 4. **Storage, TTL, logs, and alarms — negligible.**
    - With 1-day TTL, even 20,000 webhooks/day at 10 KB holds ~200 MB at steady state (<1% of the 25 GB free tier).
 
-## Choosing `PROVISIONED` vs. `PAY_PER_REQUEST`
+## Choosing `PAY_PER_REQUEST` vs. `PROVISIONED`
 
-- **Use default `PROVISIONED` 25/25** when your AWS account has the 25 RCU / 25 WCU Always Free tier available, sustained webhook volume stays under ~25 KB/s (~2.5 webhooks/sec at 10 KB), and combined read load from all pollers stays under 25 RCU/s (about 12.5 RCU/s per poller at 10 KB items and the 15 s default interval). DynamoDB burst capacity absorbs short spikes.
-- **Use `--billing-mode PAY_PER_REQUEST`** when:
-  - your AWS account already consumes its 25 RCU / 25 WCU free tier on other tables; or
-  - you have an org-wide install with payloads or multiple pollers that can burst past 25 WCU/s or 25 RCU/s and trigger DynamoDB throttling (check `WriteThrottleEvents` and `ReadThrottleEvents` on the table, or 5xx spikes via `relay-5xx`; `relay-throttles` tracks Lambda throttles, not DynamoDB capacity).
+- **Keep the default `PAY_PER_REQUEST` (On-Demand)** for most installs—especially org-wide installs with payloads, multiple pollers, or AWS accounts that already use their 25 RCU / 25 WCU free tier on other tables. On-Demand absorbs bursts without throttling and bills $0 when idle. Existing stacks on `PROVISIONED` can switch with:
 
-```sh
-hook-harness update --billing-mode PAY_PER_REQUEST
-```
+  ```sh
+  hook-harness update --billing-mode PAY_PER_REQUEST
+  ```
+
+- **Opt into `--billing-mode PROVISIONED` (25/25)** only when your AWS account still has its 25 RCU / 25 WCU Always Free tier available, sustained webhook volume stays under ~25 KB/s (~2.5 webhooks/sec at 10 KB), and combined read load from all pollers stays under 25 RCU/s (about 12.5 RCU/s per poller at 10 KB items and the 15 s default interval). DynamoDB burst capacity absorbs short spikes; monitor `WriteThrottleEvents` and `ReadThrottleEvents` on the table (or 5xx spikes via `relay-5xx`; `relay-throttles` tracks Lambda throttles, not DynamoDB capacity).
 
 ## Knobs to lower spend
 
