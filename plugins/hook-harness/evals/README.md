@@ -13,16 +13,19 @@ These are `claude plugin eval` cases for the `hook-harness` skill. Each case ask
 | Attempts            | 3 per case, one arm (`--ablation none`)                                   |
 | Cost (agent, judge) | $2.01, $0.04                                                              |
 
-| Case                          | Priority | Skill loaded | Answer passed |
-| ----------------------------- | -------- | ------------ | ------------- |
-| `workflow-publish-main`       | high     | 3 of 3       | 3 of 3        |
-| `deploy-vercel-production`    | high     | 3 of 3       | 3 of 3        |
-| `release-upstream-tag`        | high     | 3 of 3       | 3 of 3        |
-| `external-ci-circleci-status` | high     | 3 of 3       | 3 of 3        |
-| `lookalike-pr-ci`             | medium   | 0 of 3       | 3 of 3        |
-| `lookalike-pr-ci-named`       | high     | 3 of 3       | 3 of 3        |
+| Case                              | Priority | Skill loaded | Answer passed                                                |
+| --------------------------------- | -------- | ------------ | ------------------------------------------------------------ |
+| `workflow-publish-main`           | high     | 3 of 3       | 3 of 3                                                       |
+| `deploy-vercel-production`        | high     | 3 of 3       | 3 of 3                                                       |
+| `release-upstream-tag`            | high     | 3 of 3       | 3 of 3                                                       |
+| `external-ci-circleci-status`     | high     | 3 of 3       | 3 of 3                                                       |
+| `lookalike-pr-ci`                 | medium   | 0 of 3       | 3 of 3                                                       |
+| `lookalike-pr-ci-named`           | high     | 3 of 3       | 3 of 3                                                       |
+| `workflow-run-id-from-dispatch` ‡ | high     | 5 of 5       | 5 of 5 (control with the old lookup advice: 5 of 5, ceiling) |
 
 The rule `lookalike-pr-ci-named` tests also has a control: the same skill with that rule removed passed 1 of 5 against 5 of 5 with it, in an earlier run on the same day (`HISTORY.md`).
+
+‡ From the 2026-11-28 run-ID fix-vs-control run in `HISTORY.md`, not from the table's main run. Both arms pass, so it shows no harm, not a benefit.
 
 ## What each case checks
 
@@ -31,6 +34,7 @@ The rule `lookalike-pr-ci-named` tests also has a control: the same skill with t
 - `release-upstream-tag`: the agent waits with `release:v3.0.0` for another repo's release.
 - `external-ci-circleci-status`: the agent waits with `status:ci/circleci: build`, narrowed to the pushed commit with `sha`, because status events carry no branch.
 - `lookalike-pr-ci`: the agent does not set up a hook-harness wait for a PR's checks.
+- `workflow-run-id-from-dispatch`: given the run URL that `gh workflow run` printed, the agent takes the run ID from it and accepts only that run's completion, without looking the run up with `gh run list`.
 - `lookalike-pr-ci-named`: the same, when the user names hook-harness so the skill loads. It tests the skill's rule that PR checks stay with pr-shepherd even when pr-shepherd is not installed.
 
 ## How to read the numbers
