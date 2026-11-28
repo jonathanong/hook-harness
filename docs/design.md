@@ -1,24 +1,15 @@
-# hook-harness: GitHub events in, agent runs out
+# hook-harness: Pull-based GitHub webhook relay for coding agents
 
 Repo: `jongleberry/hook-harness`.
 
 ## Context
-
-hook-harness replaces auto-harness for Vouchington.
-
-Auto-harness had two parts:
-
-- A control plane of about 100k lines: API Gateway (REST and WebSockets), Lambda, DynamoDB, S3, EventBridge, a web UI, and assignment of work across hosts.
-- A host daemon of about 20k lines.
-
-Vouchington reached it through 7 workflows whose only job was to filter events and dispatch them. On 2026-11-05 those workflows ran about 3,150 times, and 96–100% of the runs were skipped.
 
 hook-harness is a relay plus a CLI. GitHub events land in a short-lived store, and the agents that act on them read from it directly:
 
 ```text
 GitHub App webhook -> Lambda (function URL) -> DynamoDB (1-day TTL)
                                   ^
-agent (e.g. /triage-loop) -- hook-harness wait / tail / mcp / serve -- polls GET /events
+agent -- hook-harness wait / tail / mcp / serve -- polls GET /events
 ```
 
 There is no runner. The agent that consumes events decides what to do with them, owns its cursor, and runs its own work.
@@ -29,6 +20,14 @@ Decisions:
 - Store-and-poll; the relay holds no long-lived connections. Each request is a short Lambda → DynamoDB call. A local `serve` daemon can fan one poller out to many clients over SSE.
 - 1-day retention.
 - Store everything the GitHub App sends. The App's event subscriptions are the only filter, and consumers filter the rest.
+
+### Why pull instead of push
+
+Webhooks push into DynamoDB and agents pull from it, rather than pushing webhooks straight to agents:
+
+- **Batching and turn cost.** Delivering every webhook immediately would trigger an agent turn per event, many of them irrelevant or part of a burst. Consumers have to filter and batch events anyway (`wait` and `wait_for_events` settle a burst before returning).
+- **Cursor-based resume.** Because events remain in DynamoDB for a day and each consumer tracks its own cursor, an agent that disconnects or hits a usage limit can pick up where it left off (and receives `gap: true` if its cursor falls past retention).
+- **Resilient to CLI and agent disconnects.** Neither the CLI nor the agent needs a reachable callback endpoint or an always-on connection, so disconnects, restarts, and machine sleeps do not drop webhooks.
 
 ## Relay (Lambda)
 
@@ -130,7 +129,12 @@ Each event has a small envelope for filtering, plus the webhook payload:
 
 ## Local fan-out (`serve`)
 
-The relay stays store-and-poll. On one machine, `hook-harness serve` is the only thing that polls it: it keeps a bounded in-memory ring buffer (1000 events or 1 hour) and streams events to local clients over SSE with per-client filters, `Last-Event-ID` replay and an explicit `gap` event. `wait`/`tail --source <url>` are a second `EventSource` implementation over that stream, so filtering, settle and cursors are unchanged. Loopback only by default; non-loopback needs `--allow-remote` plus a bearer token. The SSE `id` is an encoded cursor (relay sort key plus delivery id), so single-owner cursors printed by `wait`/`tail` are interchangeable between relay and `serve` sources. A multi-owner cursor is not: a `serve` stream has one position, so `--source` refuses it (saved or via `--after`); give `serve` and its clients different `--cursor` names.
+The relay stays store-and-poll. On one machine, `hook-harness serve` is the only thing that polls it: it keeps a bounded in-memory ring buffer (1000 events or 1 hour) and streams events to local clients over SSE with per-client filters, `Last-Event-ID` (or `?after=`) replay, `: ping` keepalives every 15s, and an explicit `gap` event (`{"cursor":"..."}`). `wait`/`tail --source <url>` are a second `EventSource` implementation over that stream, so filtering, settle and cursors are unchanged.
+
+- `GET /events` streams `id: <cursor>`, `event: envelope`, `data: <envelope JSON>` with query-param filtering (`event action repo branch command reason conclusion workflow sender label reviewer sha ref on pr minAssociation ignoreSender`, plus repeatable `filter=<EventFilter JSON>`, OR'd).
+- `GET /healthz` returns `{ok, upstream: {lastPollAt, lastError, cursor}, clients, buffered}`. Relay errors back off like `tail`; `SIGINT`/`SIGTERM` close streams and save the cursor.
+- Trust model: binds to loopback only and refuses another `--host` unless `--allow-remote` and `--auth-token` are given (`Authorization: Bearer`; `HOOK_HARNESS_SERVE_TOKEN` and `HOOK_HARNESS_SOURCE_TOKEN` keep tokens off command lines). With `--allow-remote`, `serve` speaks plain HTTP, so route remote access through a TLS proxy or an encrypted tunnel. Without a token, any local process can read events (`--no-payload` drops payloads), and requests with an `Origin` header or non-loopback `Host` header are rejected to block browsers and DNS rebinding.
+- Cursors: the SSE `id` is an encoded cursor (relay sort key plus delivery id), so single-owner cursors printed by `wait`/`tail` are interchangeable between relay and `serve` sources. A multi-owner cursor is not: a `serve` stream has one position, so `--source` refuses it (saved or via `--after`); give `serve` and its clients different `--cursor` names.
 
 ## CLI
 
@@ -138,7 +142,7 @@ The relay stays store-and-poll. On one machine, `hook-harness serve` is the only
 
 **Operations** (need AWS credentials):
 
-- `deploy`, `update`, `teardown --yes`, `status`;
+- `deploy`, `update` (`--alarm-email` / `--alarm-quiet-hours` configure CloudWatch alarms for 5xx responses, throttles, and quiet periods; `--alarm-email ""` removes them), `teardown --yes`, `status`;
 - `token create|list|revoke`.
 
 Deployment state lives in `~/.config/hook-harness/deployments/<stack>.json`.
@@ -156,17 +160,17 @@ Deployment state lives in `~/.config/hook-harness/deployments/<stack>.json`.
   - `--since <time|duration>` sets a start time.
   - `--owner a,b` polls each owner's partition separately and keeps one position per owner in a single cursor (`v: 2`). A single-owner cursor (`v: 1`) applies to every owner; an owner the cursor lacks starts from `--since`, else now. With one owner the cursor stays `v: 1`.
 - `serve`: a local SSE daemon. One poller fans out to many local clients, with per-client filters and `Last-Event-ID` replay.
-- `mcp`: a stdio MCP server with `wait_for_events` and `get_events` tools. The caller owns the cursor.
+- `mcp`: a stdio MCP server with `wait_for_events`, `get_events` and `filter_help` tools. Stateless by default (caller passes `cursor` back as `after`); optional `cursor_name` opts in to the local cursor file. Long waits send MCP progress notifications when the client provides a progress token; keep `timeout_seconds` under client tool-call caps (e.g. `MCP_TOOL_TIMEOUT`). Local checkout dev: `node /path/to/packages/cli/src/bin.ts mcp`.
 
 **Plugin:** Claude Code and Codex plugins bundle the MCP server and a skill on consuming events.
 
 ## Consumers
 
-The first consumer is Vouchington's `/triage-loop` session. It:
+A typical autonomous consumer (for example, a triage or PR-shepherd session):
 
-- runs `hook-harness wait` in the background, filtering on merge-queue ejections, failed `main` workflow runs and `/shepherd` comments;
+- runs `hook-harness wait` (or MCP `wait_for_events`) in the background, filtering on merge-queue ejections, failed `main` workflow runs, and slash-command comments;
 - owns its cursor and delivery-ID dedupe;
-- sweeps the GitHub API on `gap: true` and on its own 6-hour cycle;
+- sweeps the GitHub API on `gap: true` and on a periodic fallback cadence;
 - runs scheduled prompts and dispatches subagents itself;
 - checks author trust for comment-driven work.
 
@@ -195,4 +199,4 @@ Repo setup:
 | Comment-command abuse on a public repo | Consumers check `authorAssociation`/`author` (private org members appear as CONTRIBUTOR/NONE)   |
 | Prompt injection via event strings     | Payload text is untrusted; `--no-payload`; external-data labelling                              |
 | Token leak                             | Read-only, scoped, expiring tokens; `token revoke` takes effect on the next poll                |
-| Volume and cost                        | The App subscription list is the volume control; on-demand billing                              |
+| Volume and cost                        | The App subscription list is the volume control; on-demand billing (see [costs.md](costs.md))   |

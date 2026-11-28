@@ -1,7 +1,7 @@
 {
   "name": "hook-harness",
   "version": "0.4.1",
-  "description": "GitHub events in, agent runs out: deploy the relay, then wait, tail, serve or mcp.",
+  "description": "Pull-based GitHub webhook relay for coding agents: deploy the relay, then wait, tail, serve or mcp.",
   "keywords": [
     "agents",
     "aws",
