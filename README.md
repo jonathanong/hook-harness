@@ -1,6 +1,6 @@
 # hook-harness
 
-GitHub events in, agent runs out. Part of [ratchet-stack](https://github.com/jongleberry/ratchet-stack).
+Pull-based GitHub webhook relay for coding agents. Part of [ratchet-stack](https://github.com/jongleberry/ratchet-stack).
 
 A GitHub App pushes webhooks to a small AWS Lambda + DynamoDB table (1-day TTL), and agents pull matching events through the CLI (`wait`, `tail`, `serve`) or the MCP server (`wait_for_events`, `get_events`) using a cursor they own.
 

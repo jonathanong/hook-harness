@@ -1,4 +1,4 @@
-# hook-harness: GitHub events in, agent runs out
+# hook-harness: Pull-based GitHub webhook relay for coding agents
 
 Repo: `jongleberry/hook-harness`.
 
