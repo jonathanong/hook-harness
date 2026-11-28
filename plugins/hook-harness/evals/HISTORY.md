@@ -2,6 +2,13 @@
 
 Newest first.
 
+## 2026-11-28: the pr-shepherd-missing rule, fix against control
+
+- Commit: `cf95279` plus the new case. Same models. 5 attempts per arm. The control arm is a copy of the plugin with the rule's sentence removed from the skill. Cost: agent $1.10, judges $0.01.
+- Scores on `lookalike-pr-ci-named` (new): with the rule, skill loaded 5 of 5 and answer passed 5 of 5; control, loaded 5 of 5, passed 1 of 5.
+- Changes: added `lookalike-pr-ci-named`, which names hook-harness in the prompt so the skill loads, because `lookalike-pr-ci` never loaded it.
+- What it showed: without the rule, the agent noted that pr-shepherd was missing and fell back to a hook-harness wait on the PR's checks in 4 of 5 attempts. With the rule it did not, in any attempt.
+
 ## 2026-11-28: first measured run, single arm
 
 - Commit: the commit that added this suite (parent `93816c9`). Claude Code 2.1.332, default agent model; judge haiku. 3 attempts per case, `--ablation none`. Cost: agent $1.62, judges $0.02.

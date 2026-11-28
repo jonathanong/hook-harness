@@ -4,22 +4,25 @@ These are `claude plugin eval` cases for the `hook-harness` skill. Each case ask
 
 ## Current results
 
-| Run                 | Value                                                                               |
-| ------------------- | ----------------------------------------------------------------------------------- |
-| Date                | 2026-11-28                                                                          |
-| Commit              | the commit that added this suite (parent `93816c9`), with the skill fix it contains |
-| Agent model         | Claude Code 2.1.332 default (not recorded by the runner)                            |
-| Judge model         | haiku (runner default)                                                              |
-| Attempts            | 3 per case, one arm (`--ablation none`)                                             |
-| Cost (agent, judge) | $1.62, $0.02                                                                        |
+| Run                 | Value                                                                                                                          |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Date                | 2026-11-28                                                                                                                     |
+| Commit              | `93816c9` plus this suite's skill fix, before the rebase onto `d8c85c9` (which changed only the skill's run-identity sentence) |
+| Agent model         | Claude Code 2.1.332 default (not recorded by the runner)                                                                       |
+| Judge model         | haiku (runner default)                                                                                                         |
+| Attempts            | 3 per case, one arm (`--ablation none`)                                                                                        |
+| Cost (agent, judge) | $1.62, $0.02                                                                                                                   |
 
-| Case                          | Priority | Skill loaded | Answer passed |
-| ----------------------------- | -------- | ------------ | ------------- |
-| `workflow-publish-main`       | high     | 3 of 3       | 3 of 3        |
-| `deploy-vercel-production`    | high     | 3 of 3       | 3 of 3        |
-| `release-upstream-tag`        | high     | 3 of 3       | 3 of 3        |
-| `external-ci-circleci-status` | high     | 3 of 3       | 3 of 3        |
-| `lookalike-pr-ci`             | medium   | 0 of 3       | 3 of 3        |
+| Case                          | Priority | Skill loaded | Answer passed                             |
+| ----------------------------- | -------- | ------------ | ----------------------------------------- |
+| `workflow-publish-main`       | high     | 3 of 3       | 3 of 3                                    |
+| `deploy-vercel-production`    | high     | 3 of 3       | 3 of 3                                    |
+| `release-upstream-tag`        | high     | 3 of 3       | 3 of 3                                    |
+| `external-ci-circleci-status` | high     | 3 of 3       | 3 of 3                                    |
+| `lookalike-pr-ci`             | medium   | 0 of 3       | 3 of 3                                    |
+| `lookalike-pr-ci-named` †     | high     | 5 of 5       | 5 of 5 (control without the rule: 1 of 5) |
+
+† From the 2026-11-28 fix-vs-control run in `HISTORY.md` (commit `cf95279` plus the case, 5 attempts per arm, agent $1.10, judges $0.01), not from the table's main run.
 
 ## What each case checks
 
@@ -28,12 +31,13 @@ These are `claude plugin eval` cases for the `hook-harness` skill. Each case ask
 - `release-upstream-tag`: the agent waits with `release:v3.0.0` for another repo's release.
 - `external-ci-circleci-status`: the agent waits with `status:ci/circleci: build`, narrowed to the pushed commit with `sha`, because status events carry no branch.
 - `lookalike-pr-ci`: the agent does not set up a hook-harness wait for a PR's checks.
+- `lookalike-pr-ci-named`: the same, when the user names hook-harness so the skill loads. It tests the skill's rule that PR checks stay with pr-shepherd even when pr-shepherd is not installed.
 
 ## How to read the numbers
 
 - Three attempts per case cannot separate 100% from about 70% (the 95% interval for 3 of 3 runs from 44% to 100%). Read every row as "no failures seen", not as a rate.
 - There is no baseline arm. Without the plugin there is no hook-harness, so the judges fail it by construction. An agent without the plugin would poll `gh` instead, which does finish the task. The suite measures whether the plugin gets used correctly when installed, not whether it beats `gh`. A with/without run on 2026-11-28 is recorded in `HISTORY.md` and shows only this.
-- `lookalike-pr-ci` loaded the skill in no attempt in this run, so it does not exercise the skill's "no pr-shepherd installed" rule. The run that prompted the rule (in `HISTORY.md`) loaded it.
+- `lookalike-pr-ci` loaded the skill in no attempt, so it does not exercise the "no pr-shepherd installed" rule. `lookalike-pr-ci-named` does, and is the only row with a control arm: the same skill with that one sentence removed.
 
 ## What the suite does not measure
 
