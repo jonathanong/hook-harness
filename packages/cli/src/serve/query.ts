@@ -1,25 +1,9 @@
 import type { EventFilter } from "@hook-harness/protocol";
 
 import type { Values } from "../args.ts";
-import { buildFilters, withRepos } from "../watch/flags.ts";
+import { buildFilters, STRING_FIELDS, withRepos } from "../watch/flags.ts";
 
-const REPEATED = [
-  "event",
-  "action",
-  "reason",
-  "conclusion",
-  "branch",
-  "workflow",
-  "command",
-  "sender",
-  "label",
-  "reviewer",
-  "sha",
-  "ref",
-  "app",
-  "on",
-  "pr",
-];
+const REPEATED = [...STRING_FIELDS, "on", "pr"];
 
 /**
  * Query params mirror `wait`'s flags and reuse its filter builder. `filter` is repeatable

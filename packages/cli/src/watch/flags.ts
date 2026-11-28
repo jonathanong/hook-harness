@@ -88,7 +88,8 @@ Timing:
 export const LOGIN_HELP =
   "Login: `hook-harness login`, or HOOK_HARNESS_URL and HOOK_HARNESS_TOKEN.";
 
-const STRING_FIELDS = [
+/** Filter fields that take repeated string flags; `serve` reads the same names as query params. */
+export const STRING_FIELDS = [
   "event",
   "action",
   "reason",

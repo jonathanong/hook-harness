@@ -20,7 +20,7 @@ describe("filtersFromQuery", () => {
       filters(
         "event=pull_request&event=push&action=opened&branch=main&command=/plan&reason=CI_FAILURE" +
           "&conclusion=failure&workflow=ci&pr=4&pr=5&minAssociation=MEMBER&ignoreSender=bot" +
-          "&app=codecov&ignoreApp=github-actions",
+          "&app=codecov&ignoreApp=github-actions&environment=production&tag=v1&context=ci%2Fbuild",
       ),
     ).toEqual([
       {
@@ -33,6 +33,9 @@ describe("filtersFromQuery", () => {
         workflow: ["ci"],
         pr: [4, 5],
         app: ["codecov"],
+        environment: ["production"],
+        tag: ["v1"],
+        context: ["ci/build"],
         minAssociation: "MEMBER",
         ignoreSenders: ["bot"],
         ignoreApps: ["github-actions"],
