@@ -18,7 +18,7 @@ Parameters:
     Description: Largest pruned payload, in JSON bytes, to store. 0 stores envelopes only.
   BillingMode:
     Type: String
-    Default: PROVISIONED
+    Default: PAY_PER_REQUEST
     AllowedValues: [PROVISIONED, PAY_PER_REQUEST]
   ReadCapacity:
     Type: Number

@@ -53,7 +53,7 @@ Webhooks push into DynamoDB and agents pull from it, rather than pushing webhook
 
 - Event items: `PK=owner#<owner>`, `SK=<receivedAt ms>#<delivery id>`.
 - Token items: `PK=token#<sha256>`, `SK=token`.
-- Billing is provisioned 25/25 by default (always free) or on-demand by parameter. Org-wide installs with payloads should use on-demand.
+- Billing is on-demand (`PAY_PER_REQUEST`) by default, or provisioned (`PROVISIONED`, 25/25) by parameter.
 
 **Logs:** 1-day retention, system log level `WARN`. Payloads are never logged.
 

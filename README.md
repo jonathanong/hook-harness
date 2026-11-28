@@ -15,7 +15,7 @@ Webhooks push to DynamoDB and agents pull from it instead of a true webhook push
 - **Batching and turn efficiency.** Delivering every webhook straight to an agent would trigger a turn per event, many irrelevant or part of a burst. Agents have to filter and batch anyway (`wait` and `wait_for_events` let a burst settle before returning).
 - **Resuming after disconnects or usage limits.** Events stay buffered in DynamoDB for one day and each consumer owns its cursor, so an agent that disconnects, restarts, or hits a usage limit picks up where it left off (or gets `gap: true` past retention).
 - **Tolerates CLI and agent disconnects.** Pull needs no always-on connection or public callback endpoint, so network drops, sleeps, and process restarts do not lose events.
-- **No control plane.** One Lambda function URL and one DynamoDB table with TTL — **$0/month** on AWS Always Free tiers, or **~$0.12–$4.80/month** on DynamoDB On-Demand ([cost model](docs/costs.md)). Stores a filterable envelope plus optional payload for every subscribed event and comment, with no command allowlist. Payload text is untrusted input.
+- **No control plane.** One Lambda function URL and one DynamoDB table with TTL — **~$0.12–$4.80/month** on DynamoDB On-Demand (default), or **$0/month** on AWS Always Free tiers with `PROVISIONED` 25/25 ([cost model](docs/costs.md)). Stores a filterable envelope plus optional payload for every subscribed event and comment, with no command allowlist. Payload text is untrusted input.
 
 See [docs/design.md](docs/design.md) for the full architecture, envelope schema, and trust model.
 
@@ -110,7 +110,7 @@ pnpm add -g hook-harness         # or install globally, then: hook-harness <comm
 
 ## Cost
 
-**$0/month** on AWS Always Free tiers (default `PROVISIONED` 25/25 table), or **~$0.12–$4.80/month** on DynamoDB On-Demand (`PAY_PER_REQUEST`) from a personal repo up to a 20,000-webhook/day org. See [docs/costs.md](docs/costs.md) for the breakdown, On-Demand vs. Provisioned trade-offs, and knobs to cut spend.
+**~$0.12–$4.80/month** on DynamoDB On-Demand (`PAY_PER_REQUEST`, the default) from a personal repo up to a 20,000-webhook/day org — or **$0/month** on AWS Always Free tiers with `--billing-mode PROVISIONED` (25/25). See [docs/costs.md](docs/costs.md) for the breakdown, On-Demand vs. Provisioned trade-offs, and knobs to cut spend.
 
 ## Docs
 

@@ -40,7 +40,7 @@ describe("template.yaml", () => {
       "repository,organization",
       1000000,
     ]);
-    expect(p.BillingMode.Default).toBe("PROVISIONED");
+    expect(p.BillingMode.Default).toBe("PAY_PER_REQUEST");
     expect([p.ReadCapacity.Default, p.WriteCapacity.Default]).toEqual([25, 25]);
   });
 

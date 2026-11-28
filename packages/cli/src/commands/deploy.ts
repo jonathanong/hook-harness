@@ -11,7 +11,7 @@ import { buildParameters, PARAM_FLAGS } from "./deploy-params.ts";
 
 const FLAGS = `Flags:
   --webhook-secret <s>        Webhook secret (default: generated on first deploy, kept after)
-  --billing-mode <mode>       PROVISIONED (default) or PAY_PER_REQUEST
+  --billing-mode <mode>       PAY_PER_REQUEST (default) or PROVISIONED
   --read-capacity <n>         Provisioned read units
   --write-capacity <n>        Provisioned write units
   --payload-drop <keys>       Top-level payload keys not stored (default repository,organization;
