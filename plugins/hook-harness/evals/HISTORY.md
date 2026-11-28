@@ -2,6 +2,21 @@
 
 Newest first. Runs name the commit they measured by its subject, because the #49–#51 branches were rebased before merging and their hashes are not in `main`. Earlier entries that cite a hash refer to that branch commit.
 
+## 2026-11-28: run ID review fixes, rerun against control
+
+- Commit "fix(skill): ask for the run URL; check every event in a batch". 5 attempts per arm, same models; the control is again `main`'s skill. Cost: agent $1.11, judges $0.02.
+- Changes since the previous entry:
+  - The `workflow-run-id-from-dispatch` grader now also requires a start point from before the dispatch, so scores before this entry are not comparable for that case.
+  - The skill no longer falls back to `gh run list --created`; with no printed URL, it asks for the run's URL. It also says to check every event in a returned batch.
+- Scores on `workflow-run-id-from-dispatch`: fix, loaded 5 of 5 and passed 5 of 5; control, loaded 5 of 5 and passed 5 of 5.
+- What it showed: still a ceiling case. The change is kept for the 0.7.0 incident recorded below.
+
+## 2026-11-28: run ID from the dispatch output, fix against control
+
+- Commit "docs(skill): take the run ID from gh workflow run's URL", plus the new case. Claude Code 2.1.332, default agent model; judge haiku. 5 attempts per arm. The control is a copy of the plugin with `main`'s skill, which says to look the run up with `gh run list --limit 1` right after dispatching. Cost: agent $1.13, judges $0.03.
+- Scores on `workflow-run-id-from-dispatch` (new): fix, loaded 5 of 5 and passed 5 of 5; control, loaded 5 of 5 and passed 5 of 5.
+- What it showed: this is a ceiling case. With the URL in the prompt, the agent uses it under either text. The change is kept anyway because of a real incident. While publishing 0.7.0, an agent following the old text ran `gh run list --limit 1` right after `gh workflow run` and got the previous Publish run (46128447751 instead of 46132629538), because the new run was not listed yet. The old text told agents to do exactly that, and the eval prompt does not reproduce acting on it.
+
 ## 2026-11-28: rerun after review fixes
 
 - Commit "docs(evals): priority targets and the control-arm rule" (#51). Claude Code 2.1.332, default agent model; judge haiku. 3 attempts per case, one arm. Cost: agent $2.01, judges $0.04.
