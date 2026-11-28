@@ -6,7 +6,7 @@ The only cost trap is leaving a stack on the default `PROVISIONED` 25/25 table i
 
 ## Monthly estimates by workload
 
-Assumes 30-day months, default `--interval 15s` (172,800 polls/month per poller per owner), 50 ms average Lambda duration (256 MB `arm64`), 10 KB average stored item with pruned + gzipped payload (2 KB with `--payload-max-bytes 0`), and all 3 optional CloudWatch alarms enabled. Prices are AWS `us-east-1` list rates checked 2026-11-27.
+Assumes 30-day months, steady (uniform) webhook arrivals, default `--interval 15s` (172,800 polls/month per poller per owner), 50 ms average Lambda duration (256 MB `arm64`), 10 KB average stored item with pruned + gzipped payload (2 KB with `--payload-max-bytes 0`), and all 3 optional CloudWatch alarms enabled. Bursty workloads followed by long idle periods consume more read units (see below). Prices are AWS `us-east-1` list rates checked 2026-11-27.
 
 | Workload                                                            | Webhooks / mo | Polls / mo | On-Demand (free tier available) | On-Demand (no free tier) | Provisioned 25/25 (free tier available) | Provisioned 25/25 (no free tier) |
 | ------------------------------------------------------------------- | ------------: | ---------: | ------------------------------: | -----------------------: | --------------------------------------: | -------------------------------: |
@@ -38,7 +38,7 @@ Defined in [`packages/relay/template.yaml`](../packages/relay/template.yaml):
    - DynamoDB bills 1 WRU per 1 KB (rounded up). Dropping `installation`, `repository`, and `organization` and gzipping keeps typical items around 3–15 KB (modeled at 10 KB = 10 WRUs/webhook). Envelope-only items (`--payload-max-bytes 0`) are ~1–2 KB (2 WRUs/webhook).
 2. **DynamoDB reads (RRUs) — driven by poll frequency, poller count, and the 60s overlap window.**
    - Each `GET /events` poll does one eventually consistent token `GetItem` (0.5 RRU) plus one `Query` (minimum 0.5 RRU, or 0.5 RRU per 4 KB read).
-   - Because queries look back 60 seconds (`OVERLAP_MS = 60_000`) to handle out-of-order deliveries, each webhook is read roughly `60 / interval_seconds` times per poller (~4 times at the default 15s interval).
+   - Because queries look back 60 seconds from the **cursor** (`after - OVERLAP_MS`, not wall-clock `now`) to handle out-of-order deliveries, under steady arrivals each webhook is read roughly `60 / interval_seconds` times per poller (~4 times at the default 15s interval). If a burst is followed by an idle period with no newer events, the cursor stays at the last scanned event and every poll during that idle period re-reads the 60s window behind it until a new event advances the cursor (or retention expires it).
    - Server-side `filters` reduce Lambda response size, not DynamoDB reads: the table is partitioned by `owner`, so every event in the time window is scanned first.
    - Multi-owner polling (`--owner a,b`) queries each owner's partition separately.
 3. **Lambda invocations and duration — usually $0.**
@@ -52,7 +52,7 @@ Defined in [`packages/relay/template.yaml`](../packages/relay/template.yaml):
 - **Use default `PROVISIONED` 25/25** when your AWS account has the 25 RCU / 25 WCU Always Free tier available, sustained webhook volume stays under ~25 KB/s (~2.5 webhooks/sec at 10 KB), and combined read load from all pollers stays under 25 RCU/s (about 12.5 RCU/s per poller at 10 KB items and the 15 s default interval). DynamoDB burst capacity absorbs short spikes.
 - **Use `--billing-mode PAY_PER_REQUEST`** when:
   - your AWS account already consumes its 25 RCU / 25 WCU free tier on other tables; or
-  - you have an org-wide install with payloads that can burst past 25 WCU/sec and trigger throttling (`relay-throttles` alarm).
+  - you have an org-wide install with payloads or multiple pollers that can burst past 25 WCU/s or 25 RCU/s and trigger DynamoDB throttling (check `WriteThrottleEvents` and `ReadThrottleEvents` on the table, or 5xx spikes via `relay-5xx`; `relay-throttles` tracks Lambda throttles, not DynamoDB capacity).
 
 ```sh
 hook-harness update --billing-mode PAY_PER_REQUEST
