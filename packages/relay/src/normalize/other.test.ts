@@ -57,6 +57,7 @@ describe("checks", () => {
       action: null,
       headSha: "abc123",
       conclusion: "failure",
+      context: "ci/circleci: build",
       headRef: null,
       url: "https://github.com/o/r/commit/abc123",
     });
@@ -126,6 +127,8 @@ describe("normalizers", () => {
     expect([...normalizers.keys()].sort()).toEqual([
       "check_suite",
       "commit_comment",
+      "deployment",
+      "deployment_status",
       "issue_comment",
       "issues",
       "merge_group",
@@ -134,6 +137,7 @@ describe("normalizers", () => {
       "pull_request_review_comment",
       "pull_request_review_thread",
       "push",
+      "release",
       "status",
       "workflow_run",
     ]);

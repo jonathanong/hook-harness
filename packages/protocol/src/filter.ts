@@ -68,6 +68,9 @@ export function matches(envelope: Envelope, filter: EventFilter): boolean {
     oneOf(filter.reviewer, envelope.requestedReviewer ?? null) &&
     oneOf(filter.sha, envelope.headSha) &&
     oneOf(filter.app, envelope.app ?? null) &&
+    oneOf(filter.environment, envelope.environment ?? null) &&
+    oneOf(filter.tag, envelope.tag ?? null) &&
+    oneOf(filter.context, envelope.context ?? null) &&
     (filter.ref === undefined ||
       oneOf(filter.ref, envelope.headRef) ||
       oneOf(filter.ref, envelope.baseRef))

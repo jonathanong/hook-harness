@@ -15,13 +15,19 @@ export const FILTER_HELP = `EventFilter fields (all optional; each is a string o
   reviewer     requested reviewer login or team slug (action review_requested)
   sha          commit SHA (headSha): PR head, merge-group head, check suite, status, push
   ref          branch name matching either headRef or baseRef (branch picks one by event)
-  app          check suite App slug: github-actions, codecov, ...
+  app          check suite App slug: github-actions, codecov, circleci-checks, ...
+  environment  deployment environment (deployment, deployment_status): production, ...
+  tag          release tag (release): v1.2.0, ...
+  context      commit status context (status): ci/circleci: build, ...
   ignoreSenders   array of logins whose events never match
   ignoreApps      array of App slugs whose check suites never match
 
 Presets (\`on\` input; CLI --on): ejection, main-failure, dependabot-pr, review-requested,
 review-requested:<login|team>, label:<name>, /<command>, workflow:<name>[@<branch>]
-(a run of that Actions workflow finished, any conclusion, e.g. workflow:Publish@main).
+(a run of that Actions workflow finished, any conclusion, e.g. workflow:Publish@main),
+deployment, deployment:<environment>[@<branch>] (a deployment finished: success, failure or
+error), release, release:<tag> (a release was published), status:<context> (a commit status
+from external CI finished: success, failure or error; status events have no branch, so add sha).
 They are OR'd with \`filters\`.
 
 Within one filter all fields must match (AND). The \`filters\` array is OR'd. Empty or omitted: every event.

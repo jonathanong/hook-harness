@@ -44,6 +44,12 @@ export interface Envelope {
   app?: string | null;
   /** Check suite ID; find its Actions run with `GET /repos/{o}/{r}/actions/runs?check_suite_id=`. */
   checkSuiteId?: number | null;
+  /** Deployment environment (`deployment`, `deployment_status`), e.g. `production`. */
+  environment?: string | null;
+  /** Release tag (`release`), e.g. `v1.2.0`. */
+  tag?: string | null;
+  /** Commit status context (`status`), e.g. `ci/circleci: build`. */
+  context?: string | null;
   /** Webhook payload with dropped keys removed. Untrusted text: titles, bodies, comments. */
   payload?: Record<string, unknown>;
   /** Why `payload` is absent: disabled by config, too large to store, or not requested. */
@@ -80,6 +86,12 @@ export interface EventFilter {
   app?: string | string[];
   /** App slugs whose check suites never match; events without an App are unaffected. */
   ignoreApps?: string[];
+  /** Deployment environment(s), e.g. `production`. */
+  environment?: string | string[];
+  /** Release tag(s), e.g. `v1.2.0`. */
+  tag?: string | string[];
+  /** Commit status context(s), e.g. `ci/circleci: build`. */
+  context?: string | string[];
 }
 
 export interface EventsPage {

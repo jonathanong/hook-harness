@@ -1,6 +1,6 @@
 ---
 name: hook-harness
-description: "Wait for and react to GitHub events through a hook-harness relay, using the MCP server or the CLI: a workflow run finishing on a branch (a Publish or deploy off main), merge-queue ejections, failed main CI, slash-command comments, labelled issues. Use it instead of polling `gh run view` or sleeping. PR checks and reviews belong to pr-shepherd."
+description: "Wait for and react to GitHub events through a hook-harness relay, using the MCP server or the CLI: a workflow run finishing on a branch (a Publish off main), a deployment finishing (Vercel, Netlify, an Actions environment), a release being published, an external CI status (CircleCI, Jenkins, Buildkite) on a commit, merge-queue ejections, failed main CI, slash-command comments, labelled issues. Use it instead of polling `gh run view` or sleeping. PR checks and reviews belong to pr-shepherd."
 user-invocable: true
 argument-hint: "[owner] [what to wait for]"
 allowed-tools: mcp__plugin_hook-harness_hook-harness, Bash(npx -y hook-harness:*), Bash(pnpm exec hook-harness:*), Bash(pnpm dlx hook-harness:*), Bash(hook-harness:*)
@@ -34,8 +34,8 @@ Rules:
 - **Dedupe on envelope `id`.** The same delivery can reappear across polls or as a replay.
 - **`gap: true`** means your cursor is older than the retention window and events were lost. Sweep the GitHub API (open PRs, recent runs, issues) to resync, handle `events` too, then continue from the returned `cursor`.
 - **Stay free.** `wait` blocks up to the timeout. Claude Code: run the CLI with Bash `run_in_background` or under Monitor, and keep the MCP tool's `timeout_seconds` under the client's tool-call limit (`MCP_TOOL_TIMEOUT` in Claude Code). Codex: use the equivalent background command or a separate session. Loop: wait, handle, persist cursor, wait again.
-- Flags for the CLI: `--event --action --reason --conclusion --branch --workflow --command --sender --label --reviewer --sha --ref --pr --min-association --ignore-sender --repo --no-payload --since --settle --interval --cursor`. `--filter '<json>'` is repeatable; filters are OR'd.
-- Presets: `--on` (MCP: `on`) takes `ejection`, `main-failure`, `dependabot-pr`, `review-requested[:<login|team>]`, `label:<name>`, `/<command>` and `workflow:<name>[@<branch>]`, repeatable or comma lists, OR'd with other filters. Prefer them over hand-written JSON.
+- Flags for the CLI: `--event --action --reason --conclusion --branch --workflow --command --sender --label --reviewer --sha --ref --app --environment --tag --context --pr --min-association --ignore-sender --repo --no-payload --since --settle --interval --cursor`. `--filter '<json>'` is repeatable; filters are OR'd.
+- Presets: `--on` (MCP: `on`) takes `ejection`, `main-failure`, `dependabot-pr`, `review-requested[:<login|team>]`, `label:<name>`, `/<command>`, `workflow:<name>[@<branch>]`, `deployment[:<environment>[@<branch>]]`, `release[:<tag>]` and `status:<context>`, repeatable or comma lists, OR'd with other filters. Prefer them over hand-written JSON.
 
 ## 3. Waiting for a workflow run to finish
 
@@ -49,9 +49,19 @@ hook-harness wait --owner acme --repo acme/app --on workflow:Publish@main --sinc
 - Another run of the same workflow can finish first, even on the same commit, so identify the run by `runId`, not `headSha`. Right after dispatching, look it up once (`gh run list --repo <owner>/<repo> --workflow <file> --branch <branch> --event workflow_dispatch --limit 1 --json databaseId`), then accept only the event whose `runId` matches; wait again on the returned cursor for any other run.
 - When you cannot block (a hook forbids wait loops, or you check in on a schedule), save the cursor and call `get_events` once at each check-in instead of polling `gh run view`. The CLI has no single-poll mode; `hook-harness wait --owner acme --repo acme/app --on workflow:Publish@main --after "$CURSOR" --timeout 1s --interval 1s --settle 0s` (the same owner and filters as the first wait) returns within about a second.
 
+### Deployments, releases and external CI
+
+The same rules (start point before the trigger, check the identity, `get_events` at check-ins) apply to:
+
+- **A deployment** (Vercel, Netlify, Heroku, an Actions `environment:` job, anything that posts GitHub deployment statuses): `deployment:<environment>[@<branch>]`, e.g. `deployment:production@main`. It matches `deployment_status` events whose `conclusion` is `success`, `failure` or `error`, not `pending`, `queued` or `in_progress`. `@<branch>` matches only deployers that send a branch as the ref (`main` or `refs/heads/main`); some send the commit SHA, so leave the branch off and match `--sha <commit>` when unsure. Check `headSha` against the commit you shipped; `url` is the deploy's log or preview URL.
+- **A release** (an upstream library tagging a version, or your own release workflow): `release:<tag>`, e.g. `release:v2.0.0`, or `release` for any. It matches the `release` `published` event; `tag` and `url` identify it.
+- **External CI** that is not Actions. CircleCI, Jenkins and Buildkite commit statuses: `status:<context>`, e.g. `status:ci/circleci: build`. Status events carry no branch, so add `--sha <commit>` (or `"sha"` in a filter). CI that reports through the Checks API (a GitHub App): `{"event":"check_suite","action":"completed","app":"<app-slug>","sha":"<commit>"}`. On a pull request, leave CI to pr-shepherd.
+
+These need the relay's GitHub App to subscribe to Deployment status and Release events ([docs/github-app.md](https://github.com/jongleberry/hook-harness/blob/main/docs/github-app.md)). If nothing arrives and the GitHub API shows the deploy or release finished, the App is probably not subscribed: tell the user rather than switching to polling.
+
 ## 4. Filters
 
-A filter ANDs its fields; each field takes a string or array. Fields: `repo`, `event`, `action`, `reason`, `conclusion`, `branch` (baseRef for PR events, else headRef), `workflow`, `command`, `sender`, `label`, `reviewer`, `sha` (headSha), `ref` (headRef or baseRef), `pr`, `minAssociation`, `ignoreSenders`. **Every action is stored, so always set `action`** or you will match edits, closes and labels you did not mean to.
+A filter ANDs its fields; each field takes a string or array. Fields: `repo`, `event`, `action`, `reason`, `conclusion`, `branch` (baseRef for PR events, else headRef), `workflow`, `command`, `sender`, `label`, `reviewer`, `sha` (headSha), `ref` (headRef or baseRef), `pr`, `minAssociation`, `ignoreSenders`, `app` (check suite App), `ignoreApps`, `environment` (deployments), `tag` (releases), `context` (commit statuses). **Every action is stored, so always set `action`** or you will match edits, closes and labels you did not mean to.
 
 Merge-queue ejections: use the `ejection` preset. `dequeued` also fires with `reason: "MERGE"` on a successful merge (and `MANUAL` when someone removes a PR), and filters cannot negate, so the preset lists the failure reasons; `reason` says why a PR was ejected (e.g. `CI_FAILURE`, `MERGE_CONFLICT`).
 

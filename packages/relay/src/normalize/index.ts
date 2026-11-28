@@ -3,6 +3,7 @@ import { mergeGroup, push } from "./branch.ts";
 import { checkSuite, status, workflowRun } from "./checks.ts";
 import { commitComment, issueComment, issues } from "./comment.ts";
 import { generic } from "./common.ts";
+import { deployment, deploymentStatus, release } from "./delivery.ts";
 import {
   pullRequest,
   pullRequestReview,
@@ -24,6 +25,9 @@ export const normalizers = new Map<string, Normalizer>([
   ["status", status],
   ["merge_group", mergeGroup],
   ["push", push],
+  ["deployment", deployment],
+  ["deployment_status", deploymentStatus],
+  ["release", release],
 ]);
 
 export function normalizerFor(event: string): Normalizer {
