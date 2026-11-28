@@ -34,6 +34,9 @@ See [docs/design.md](docs/design.md) for the full architecture, envelope schema,
 | `label:<name>`                                       | That label was added to an issue or PR                                                 |
 | `/<command>`                                         | A new comment starting with that command, e.g. `/shepherd`                             |
 | `workflow:<name>[@<branch>]`                         | A run of that Actions workflow finished (any conclusion), e.g. `workflow:Publish@main` |
+| `deployment`, `deployment:<environment>[@<branch>]`  | A deployment finished (`success`, `failure` or `error`), e.g. `deployment:production`  |
+| `release`, `release:<tag>`                           | A release was published (with that tag)                                                |
+| `status:<context>`                                   | A commit status from external CI finished, e.g. `status:ci/circleci: build`            |
 
 ```sh
 hook-harness wait --owner acme --on ejection,main-failure,dependabot-pr,/shepherd --on label:needs-review --no-payload

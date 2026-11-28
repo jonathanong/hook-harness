@@ -24,6 +24,9 @@ export const eventFilter = z
     ignoreSenders: z.array(z.string()).optional().describe("logins whose events never match"),
     app: strings.optional().describe("check suite App slug, e.g. codecov"),
     ignoreApps: z.array(z.string()).optional().describe("App slugs whose check suites never match"),
+    environment: strings.optional().describe("deployment environment, e.g. production"),
+    tag: strings.optional().describe("release tag, e.g. v1.2.0"),
+    context: strings.optional().describe("commit status context, e.g. ci/circleci: build"),
   })
   .describe("Each field matches when the envelope value equals it or is one of the array values.");
 
@@ -48,7 +51,9 @@ const scope = {
         "main-failure (failed workflow run or check suite on main), dependabot-pr (new Dependabot PR), " +
         "review-requested[:<login|team>], label:<name> (label added to an issue or PR), or " +
         "/<command> such as /shepherd (new comment with that command), or " +
-        "workflow:<name>[@<branch>] such as workflow:Publish@main (a run of that workflow finished, any conclusion).",
+        "workflow:<name>[@<branch>] such as workflow:Publish@main (a run of that workflow finished, any conclusion), " +
+        "deployment[:<environment>[@<branch>]] (a deployment succeeded or failed), " +
+        "release[:<tag>] (a release was published), or status:<context> (that commit status finished).",
     ),
   after: z
     .string()

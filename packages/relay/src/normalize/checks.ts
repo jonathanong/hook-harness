@@ -32,5 +32,6 @@ export const status: Normalizer = (payload, ctx) =>
   build("status", payload, ctx, {
     headSha: payload.sha,
     conclusion: payload.state,
+    context: payload.context,
     url: payload.commit.html_url,
   });

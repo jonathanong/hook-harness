@@ -53,6 +53,40 @@ describe("presets", () => {
     expect(preset("workflow:")).toBeUndefined();
   });
 
+  it("deployment[:<environment>[@<branch>]] matches finished deployment statuses", () => {
+    const status = { event: "deployment_status", environment: "production", headRef: "main" };
+    for (const conclusion of ["success", "failure", "error"]) {
+      expect(on("deployment", { ...status, conclusion })).toBe(true);
+      expect(on("deployment:production", { ...status, conclusion })).toBe(true);
+    }
+    const done = { ...status, conclusion: "success" };
+    for (const conclusion of ["pending", "queued", "in_progress", "inactive"]) {
+      expect(on("deployment:production", { ...status, conclusion })).toBe(false);
+    }
+    expect(on("deployment:staging", done)).toBe(false);
+    expect(on("deployment:production@main", done)).toBe(true);
+    expect(on("deployment:production@release", done)).toBe(false);
+    expect(on("deployment", { ...done, event: "deployment" })).toBe(false);
+    expect(preset("deployment:production@")).toBeUndefined();
+  });
+
+  it("release[:<tag>] matches a published release", () => {
+    const release = { event: "release", action: "published", tag: "v1.2.0" };
+    expect(on("release", release)).toBe(true);
+    expect(on("release:v1.2.0", release)).toBe(true);
+    expect(on("release:v1.3.0", release)).toBe(false);
+    expect(on("release", { ...release, action: "created" })).toBe(false);
+  });
+
+  it("status:<context> matches a finished commit status with that context", () => {
+    const status = { event: "status", context: "ci/circleci: build", conclusion: "failure" };
+    expect(on("status:ci/circleci: build", status)).toBe(true);
+    expect(on("status:ci/circleci: build", { ...status, conclusion: "pending" })).toBe(false);
+    expect(on("status:ci/circleci: test", status)).toBe(false);
+    expect(preset("status")).toBeUndefined();
+    expect(preset("status:")).toBeUndefined();
+  });
+
   it("a slash command matches a new comment with that command", () => {
     const comment = { event: "issue_comment", action: "created", command: "/shepherd" };
     expect(on("/Shepherd", comment)).toBe(true);

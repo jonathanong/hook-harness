@@ -38,7 +38,8 @@ Set all of these to **Read-only**. Leave everything else as **No access**.
 | Actions         | `workflow_run`                                                                                                                 |
 | Checks          | `check_suite`                                                                                                                  |
 | Commit statuses | `status`                                                                                                                       |
-| Contents        | `push`, `commit_comment`                                                                                                       |
+| Contents        | `push`, `commit_comment`, `release`                                                                                            |
+| Deployments     | `deployment`, `deployment_status`                                                                                              |
 | Issues          | `issues`, `issue_comment` on issues                                                                                            |
 | Merge queues    | `merge_group`                                                                                                                  |
 | Metadata        | mandatory; GitHub selects it automatically                                                                                     |
@@ -52,6 +53,7 @@ An event checkbox only appears once you grant the matching permission above.
 
 - Check suite
 - Commit comment
+- Deployment status
 - Issue comment
 - Issues
 - Merge group
@@ -60,12 +62,15 @@ An event checkbox only appears once you grant the matching permission above.
 - Pull request review comment
 - Pull request review thread
 - Push
+- Release
 - Status
 - Workflow run
 
 The relay stores every event and action the App sends; this subscription list is the only filter, and agents filter the rest. Each extra event costs a Lambda invocation and a DynamoDB write, so only subscribe to events an agent will use. Events without an owning account (e.g. Security advisory, which comes from the global advisory database) are dropped.
 
 The `main-failure` preset needs both Check suite and Workflow run: it takes GitHub Actions failures from `workflow_run` and skips Actions' own check suites (`app` `github-actions`). With Check suite only, use `--filter '{"event":"check_suite","action":"completed","conclusion":"failure","branch":"main"}'` instead. Check suites stored by a relay older than 0.3.5 have no `app`, so `app` filters skip them and `ignoreApps` lets them through.
+
+Deployment status and Release feed the `deployment` and `release` presets. They are optional: leave them unsubscribed and those presets never match. Relays from hook-harness 0.6.0 and older store them without `environment` or `tag`, so run `hook-harness update` before subscribing. The `status:<context>` preset needs the same update, since older relays drop the status `context`.
 
 ### Private key
 

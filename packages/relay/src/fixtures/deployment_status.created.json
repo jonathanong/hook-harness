@@ -1,0 +1,28 @@
+{
+  "action": "created",
+  "deployment_status": {
+    "id": 9,
+    "state": "success",
+    "environment": "production",
+    "target_url": "https://app-abc.vercel.app",
+    "environment_url": "https://app.example.com",
+    "description": "SECRET BODY"
+  },
+  "deployment": {
+    "id": 123,
+    "sha": "abc123",
+    "ref": "main",
+    "environment": "production",
+    "url": "https://api.github.com/repos/o/r/deployments/123",
+    "description": "SECRET BODY"
+  },
+  "repository": {
+    "full_name": "o/r",
+    "html_url": "https://github.com/o/r",
+    "default_branch": "main"
+  },
+  "sender": {
+    "login": "vercel[bot]",
+    "type": "Bot"
+  }
+}
