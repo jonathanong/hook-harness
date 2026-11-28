@@ -1,6 +1,7 @@
 # Eval rules
 
 - Run the suite with `claude plugin eval plugins/hook-harness --runs 3 --ablation none --no-publish --trust-plugin` from the repo root. Use `--case '<glob>'` for one case and `--tag <tag>` for a group (`trigger`, `no-trigger`, `deployment`, `release`, `external-ci`, `workflow`, `pr`). Pilot a new case with `--runs 1` first.
+- Set a case's priority by what its failure costs a user: `high` when the agent would poll, miss the event or act on the wrong run, deploy or release; `medium` when the cost is extra work or a wrong suggestion that the user would catch.
 - Give every case a priority tag and hold it to that target: `high` passes 70% (3 of 3 at three attempts), `medium` 60% (2 of 3). Hold skill loading on trigger cases to 80%, judged over six attempts or more. Report counts ("3 of 3"), never bare rates.
 - Keep one arm. Without the plugin hook-harness does not exist, so a baseline arm fails by construction and its delta means nothing.
 - Each case is `<name>/prompt.md` plus `graders/answer.md` (an LLM judge). Trigger cases also get `graders/skill-fired.md` (`tool_used: Skill`, matching `hook-harness`). Tag every case with its group and its priority (`high` or `medium`).

@@ -1,28 +1,28 @@
 # History
 
-Newest first.
+Newest first. Runs name the commit they measured by its subject, because the #49–#51 branches were rebased before merging and their hashes are not in `main`. Earlier entries that cite a hash refer to that branch commit.
 
 ## 2026-11-28: rerun after review fixes
 
-- Commit `45930d9` (measured as `924b96f`, which a rebase rewrote; the plugin tree is the same and only CLI code under it changed). Claude Code 2.1.332, default agent model; judge haiku. 3 attempts per case, one arm. Cost: agent $2.01, judges $0.04.
+- Commit "docs(evals): priority targets and the control-arm rule" (#51). Claude Code 2.1.332, default agent model; judge haiku. 3 attempts per case, one arm. Cost: agent $2.01, judges $0.04.
 - Scores: every case passed 3 of 3. The skill loaded 3 of 3 on every case except `lookalike-pr-ci` (0 of 3).
 - Changes since the previous entry, all to the skill's text after review:
   - It identifies a run by `runId`, not `headSha`.
   - The run lookup passes `--repo`.
   - It notes that `deployment:<env>@<branch>` needs a deployer that sends a branch ref.
   - AGENTS.md adds priority targets and the control-arm rule.
-- What it showed: the review edits did not move any case. Earlier entries name commits that the rebase onto `d8c85c9` rewrote, so they are not in the branch history.
+- What it showed: the review edits did not move any case.
 
 ## 2026-11-28: the pr-shepherd-missing rule, fix against control
 
-- Commit: `cf95279` plus the new case. Same models. 5 attempts per arm. The control arm is a copy of the plugin with the rule's sentence removed from the skill. Cost: agent $1.10, judges $0.01.
+- Commit: "test(evals): plugin evals for workflow, deployment, release and status waits" (#51) plus the new case. Same models. 5 attempts per arm. The control arm is a copy of the plugin with the rule's sentence removed from the skill. Cost: agent $1.10, judges $0.01.
 - Scores on `lookalike-pr-ci-named` (new): with the rule, skill loaded 5 of 5 and answer passed 5 of 5; control, loaded 5 of 5, passed 1 of 5.
 - Changes: added `lookalike-pr-ci-named`, which names hook-harness in the prompt so the skill loads, because `lookalike-pr-ci` never loaded it.
 - What it showed: without the rule, the agent noted that pr-shepherd was missing and fell back to a hook-harness wait on the PR's checks in 4 of 5 attempts. With the rule it did not, in any attempt.
 
 ## 2026-11-28: first measured run, single arm
 
-- Commit: the commit that added this suite (parent `93816c9`). Claude Code 2.1.332, default agent model; judge haiku. 3 attempts per case, `--ablation none`. Cost: agent $1.62, judges $0.02.
+- Commit: "test(evals): plugin evals for workflow, deployment, release and status waits" (#51), before review fixes. Claude Code 2.1.332, default agent model; judge haiku. 3 attempts per case, `--ablation none`. Cost: agent $1.62, judges $0.02.
 - Scores: skill loaded 3 of 3 and answer passed 3 of 3 on `workflow-publish-main`, `deploy-vercel-production`, `release-upstream-tag` and `external-ci-circleci-status`. `lookalike-pr-ci`: answer passed 3 of 3, skill loaded 0 of 3.
 - Changes since the previous entry:
   - The suite dropped the baseline arm.

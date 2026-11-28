@@ -4,14 +4,14 @@ These are `claude plugin eval` cases for the `hook-harness` skill. Each case ask
 
 ## Current results
 
-| Run                 | Value                                                    |
-| ------------------- | -------------------------------------------------------- |
-| Date                | 2026-11-28                                               |
-| Commit              | `45930d9`                                                |
-| Agent model         | Claude Code 2.1.332 default (not recorded by the runner) |
-| Judge model         | haiku (runner default)                                   |
-| Attempts            | 3 per case, one arm (`--ablation none`)                  |
-| Cost (agent, judge) | $2.01, $0.04                                             |
+| Run                 | Value                                                                     |
+| ------------------- | ------------------------------------------------------------------------- |
+| Date                | 2026-11-28                                                                |
+| Commit              | the commit "docs(evals): priority targets and the control-arm rule" (#51) |
+| Agent model         | Claude Code 2.1.332 default (not recorded by the runner)                  |
+| Judge model         | haiku (runner default)                                                    |
+| Attempts            | 3 per case, one arm (`--ablation none`)                                   |
+| Cost (agent, judge) | $2.01, $0.04                                                              |
 
 | Case                          | Priority | Skill loaded | Answer passed |
 | ----------------------------- | -------- | ------------ | ------------- |
