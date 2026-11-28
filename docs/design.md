@@ -30,6 +30,14 @@ Decisions:
 - 1-day retention.
 - Store everything the GitHub App sends. The App's event subscriptions are the only filter, and consumers filter the rest.
 
+### Why pull instead of push
+
+Webhooks push into DynamoDB and agents pull from it, rather than pushing webhooks straight to agents:
+
+- **Batching and turn cost.** Delivering every webhook immediately would trigger an agent turn per event, many of them irrelevant or part of a burst. Consumers have to filter and batch events anyway (`wait` and `wait_for_events` settle a burst before returning).
+- **Cursor-based resume.** Because events remain in DynamoDB for a day and each consumer tracks its own cursor, an agent that disconnects or hits a usage limit can pick up where it left off (and receives `gap: true` if its cursor falls past retention).
+- **Resilient to CLI and agent disconnects.** Neither the CLI nor the agent needs a reachable callback endpoint or an always-on connection, so disconnects, restarts, and machine sleeps do not drop webhooks.
+
 ## Relay (Lambda)
 
 **`POST /webhook`**
@@ -130,7 +138,12 @@ Each event has a small envelope for filtering, plus the webhook payload:
 
 ## Local fan-out (`serve`)
 
-The relay stays store-and-poll. On one machine, `hook-harness serve` is the only thing that polls it: it keeps a bounded in-memory ring buffer (1000 events or 1 hour) and streams events to local clients over SSE with per-client filters, `Last-Event-ID` replay and an explicit `gap` event. `wait`/`tail --source <url>` are a second `EventSource` implementation over that stream, so filtering, settle and cursors are unchanged. Loopback only by default; non-loopback needs `--allow-remote` plus a bearer token. The SSE `id` is an encoded cursor (relay sort key plus delivery id), so single-owner cursors printed by `wait`/`tail` are interchangeable between relay and `serve` sources. A multi-owner cursor is not: a `serve` stream has one position, so `--source` refuses it (saved or via `--after`); give `serve` and its clients different `--cursor` names.
+The relay stays store-and-poll. On one machine, `hook-harness serve` is the only thing that polls it: it keeps a bounded in-memory ring buffer (1000 events or 1 hour) and streams events to local clients over SSE with per-client filters, `Last-Event-ID` (or `?after=`) replay, `: ping` keepalives every 15s, and an explicit `gap` event (`{"cursor":"..."}`). `wait`/`tail --source <url>` are a second `EventSource` implementation over that stream, so filtering, settle and cursors are unchanged.
+
+- `GET /events` streams `id: <cursor>`, `event: envelope`, `data: <envelope JSON>` with query-param filtering (`event action repo branch command reason conclusion workflow sender label reviewer sha ref on pr minAssociation ignoreSender`, plus repeatable `filter=<EventFilter JSON>`, OR'd).
+- `GET /healthz` returns `{ok, upstream: {lastPollAt, lastError, cursor}, clients, buffered}`. Relay errors back off like `tail`; `SIGINT`/`SIGTERM` close streams and save the cursor.
+- Trust model: binds to loopback only and refuses another `--host` unless `--allow-remote` and `--auth-token` are given (`Authorization: Bearer`; `HOOK_HARNESS_SERVE_TOKEN` and `HOOK_HARNESS_SOURCE_TOKEN` keep tokens off command lines). Without a token any local process can read events (`--no-payload` drops payloads). Requests with an `Origin` header or non-loopback `Host` header are rejected to block browsers and DNS rebinding.
+- Cursors: the SSE `id` is an encoded cursor (relay sort key plus delivery id), so single-owner cursors printed by `wait`/`tail` are interchangeable between relay and `serve` sources. A multi-owner cursor is not: a `serve` stream has one position, so `--source` refuses it (saved or via `--after`); give `serve` and its clients different `--cursor` names.
 
 ## CLI
 
@@ -138,7 +151,7 @@ The relay stays store-and-poll. On one machine, `hook-harness serve` is the only
 
 **Operations** (need AWS credentials):
 
-- `deploy`, `update`, `teardown --yes`, `status`;
+- `deploy`, `update` (`--alarm-email` / `--alarm-quiet-hours` configure CloudWatch alarms for 5xx responses, throttles, and quiet periods; `--alarm-email ""` removes them), `teardown --yes`, `status`;
 - `token create|list|revoke`.
 
 Deployment state lives in `~/.config/hook-harness/deployments/<stack>.json`.
@@ -156,7 +169,7 @@ Deployment state lives in `~/.config/hook-harness/deployments/<stack>.json`.
   - `--since <time|duration>` sets a start time.
   - `--owner a,b` polls each owner's partition separately and keeps one position per owner in a single cursor (`v: 2`). A single-owner cursor (`v: 1`) applies to every owner; an owner the cursor lacks starts from `--since`, else now. With one owner the cursor stays `v: 1`.
 - `serve`: a local SSE daemon. One poller fans out to many local clients, with per-client filters and `Last-Event-ID` replay.
-- `mcp`: a stdio MCP server with `wait_for_events` and `get_events` tools. The caller owns the cursor.
+- `mcp`: a stdio MCP server with `wait_for_events`, `get_events` and `filter_help` tools. Stateless by default (caller passes `cursor` back as `after`); optional `cursor_name` opts in to the local cursor file. Long waits send MCP progress notifications when the client provides a progress token; keep `timeout_seconds` under client tool-call caps (e.g. `MCP_TOOL_TIMEOUT`). Local checkout dev: `node /path/to/packages/cli/src/bin.ts mcp`.
 
 **Plugin:** Claude Code and Codex plugins bundle the MCP server and a skill on consuming events.
 
