@@ -39,7 +39,7 @@ Rules:
 
 ## 3. Waiting for a workflow run to finish
 
-For a workflow on a branch, such as a Publish or deploy you dispatched on main, use `workflow:<name>[@<branch>]`. The preset splits at the last `@`, so for a branch whose name contains `@` use a filter instead: `{"event":"workflow_run","action":"completed","workflow":"<name>","branch":"<branch>"}`. It matches the run's `workflow_run` `completed` event, whatever the conclusion. Read `conclusion` (`success`, `failure`, `cancelled`) from the event, and `runId` to fetch logs with `gh run view <runId> --repo <owner>/<repo> --log-failed`. CI on a pull request is pr-shepherd's job, not this one.
+For a workflow on a branch, such as a Publish or deploy you dispatched on main, use `workflow:<name>[@<branch>]`. The preset splits at the last `@`, so for a branch whose name contains `@` use a filter instead: `{"event":"workflow_run","action":"completed","workflow":"<name>","branch":"<branch>"}`. It matches the run's `workflow_run` `completed` event, whatever the conclusion. Read `conclusion` (`success`, `failure`, `cancelled`) from the event, and `runId` to fetch logs with `gh run view <runId> --repo <owner>/<repo> --log-failed`. CI on a pull request is pr-shepherd's job, not this one. If pr-shepherd is not installed, still do not wait on a PR's checks, reviews or comments here: tell the user that pr-shepherd handles them and how to install it.
 
 ```sh
 hook-harness wait --owner acme --repo acme/app --on workflow:Publish@main --since 10m --timeout 30m --no-payload
