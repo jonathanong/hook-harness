@@ -4,15 +4,6 @@ Repo: `jongleberry/hook-harness`.
 
 ## Context
 
-hook-harness replaces auto-harness for Vouchington.
-
-Auto-harness had two parts:
-
-- A control plane of about 100k lines: API Gateway (REST and WebSockets), Lambda, DynamoDB, S3, EventBridge, a web UI, and assignment of work across hosts.
-- A host daemon of about 20k lines.
-
-Vouchington reached it through 7 workflows whose only job was to filter events and dispatch them. On 2026-11-05 those workflows ran about 3,150 times, and 96–100% of the runs were skipped.
-
 hook-harness is a relay plus a CLI. GitHub events land in a short-lived store, and the agents that act on them read from it directly:
 
 ```text
