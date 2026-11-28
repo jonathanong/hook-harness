@@ -20,7 +20,9 @@ export const FILTER_HELP = `EventFilter fields (all optional; each is a string o
   ignoreApps      array of App slugs whose check suites never match
 
 Presets (\`on\` input; CLI --on): ejection, main-failure, dependabot-pr, review-requested,
-review-requested:<login|team>, label:<name>, /<command>. They are OR'd with \`filters\`.
+review-requested:<login|team>, label:<name>, /<command>, workflow:<name>[@<branch>]
+(a run of that Actions workflow finished, any conclusion, e.g. workflow:Publish@main).
+They are OR'd with \`filters\`.
 
 Within one filter all fields must match (AND). The \`filters\` array is OR'd. Empty or omitted: every event.
 

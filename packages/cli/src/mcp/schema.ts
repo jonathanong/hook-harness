@@ -47,7 +47,8 @@ const scope = {
       "Preset filters, OR'd with `filters`: ejection (merge-queue ejection, not a merge), " +
         "main-failure (failed workflow run or check suite on main), dependabot-pr (new Dependabot PR), " +
         "review-requested[:<login|team>], label:<name> (label added to an issue or PR), or " +
-        "/<command> such as /shepherd (new comment with that command).",
+        "/<command> such as /shepherd (new comment with that command), or " +
+        "workflow:<name>[@<branch>] such as workflow:Publish@main (a run of that workflow finished, any conclusion).",
     ),
   after: z
     .string()
