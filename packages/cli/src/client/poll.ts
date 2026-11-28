@@ -2,8 +2,15 @@ import { setTimeout } from "node:timers/promises";
 
 import { matches, type Envelope, type EventsPage } from "@hook-harness/protocol";
 
-import { advance, decodeCursor, encodeCursor, forOwners, type Position } from "../watch/cursor.ts";
-import { AuthError } from "./errors.ts";
+import {
+  advance,
+  decodeCursor,
+  encodeCursor,
+  forOwners,
+  type Cursor,
+  type Position,
+} from "../watch/cursor.ts";
+import { AuthError, BadRequestError } from "./errors.ts";
 import {
   backoffMs,
   fetchEventsPage,
@@ -11,6 +18,7 @@ import {
   type Connection,
   type EventsQuery,
 } from "./events.ts";
+import { merge } from "./merge.ts";
 
 /** One poll: a page, or the error it hit (retried after a backoff). */
 export type PageResult = { page: EventsPage } | { error: Error };
@@ -33,7 +41,8 @@ const defaultSleep = (ms: number, signal: AbortSignal): Promise<void> =>
 
 /**
  * Polls `GET /events` until `signal` aborts. A page that was cut short (`more`) is followed up at
- * once; other failures are yielded and retried with capped exponential backoff. Auth errors throw.
+ * once; other failures are yielded and retried with capped exponential backoff. `AuthError` and
+ * `BadRequestError` throw, since retrying cannot help.
  * Pages are as the relay sent them: see `pollEvents` for deduplicated, filtered events.
  */
 export async function* pollPages(options: PollPagesOptions): AsyncGenerator<PageResult> {
@@ -51,7 +60,7 @@ export async function* pollPages(options: PollPagesOptions): AsyncGenerator<Page
       result = { page };
       wait = (page.more ?? page.events.length >= limit) ? 0 : undefined;
     } catch (error) {
-      if (error instanceof AuthError) throw error;
+      if (error instanceof AuthError || error instanceof BadRequestError) throw error;
       failures += 1;
       result = { error: error as Error };
       wait = backoffMs(intervalMs, failures);
@@ -62,48 +71,70 @@ export async function* pollPages(options: PollPagesOptions): AsyncGenerator<Page
   }
 }
 
-export interface PollEventsOptions extends Omit<PollPagesOptions, "after"> {
+export interface PollEventsOptions extends Omit<PollPagesOptions, "after" | "owner"> {
+  /** One owner, or several polled side by side under one cursor (like `wait --owner a,b`). */
+  owner: string | string[];
   /** A `cursor` from an earlier batch, or one printed by `hook-harness wait`/`tail`. */
   after?: string;
-  /** Start time when there is no `after`; absent means now. */
+  /** Start time when there is no `after` (and for owners `after` lacks); absent means now. */
   since?: Date;
 }
 
-/** New matching events since the last batch, and the cursor to resume after them. */
-export type EventsBatch =
+/** One owner's poll: its new matching events and the cursor to resume every owner from. */
+export type EventsBatch = { owner: string } & (
   | {
       events: Envelope[];
       /** Pass as `after` to resume; the same format `hook-harness wait --after` takes. */
       cursor: string;
-      /** True when the start point is older than the relay's 24h retention. */
+      /** True when `owner`'s start point is older than the relay's 24h retention. */
       gap: boolean;
     }
-  | { error: Error };
+  | { error: Error }
+);
 
-function start(options: PollEventsOptions): Position {
-  const fresh = (): Position => ({ sk: String((options.since ?? new Date()).getTime()), seen: [] });
-  if (options.after === undefined) return fresh();
-  return forOwners(decodeCursor(options.after), [options.owner.toLowerCase()], fresh);
+async function* tagged(
+  owner: string,
+  poll: AsyncGenerator<PageResult>,
+): AsyncGenerator<PageResult & { owner: string }> {
+  for await (const result of poll) yield { ...result, owner };
 }
 
 /**
- * Polls like `pollPages`, but yields each event once (the relay's overlap replay is dropped) and
- * only events matching `filters`/`on`, so it is exact even when filters are too big to send.
- * Yields a batch for every poll, empty or not. Throws for a bad `after` or an unknown preset.
+ * Polls each owner like `pollPages`, but yields each event once (the relay's overlap replay is
+ * dropped) and only events matching `filters`/`on`, so it is exact even when filters are too big
+ * to send. Yields a batch for every poll, empty or not, naming the owner it came from; with
+ * several owners, `cursor` covers them all. Throws for a bad `after` or an unknown preset.
  */
 export async function* pollEvents(options: PollEventsOptions): AsyncGenerator<EventsBatch> {
   const filters = queryFilters(options);
-  let cursor = start(options);
-  for await (const result of pollPages({ ...options, after: cursor.sk })) {
-    if ("error" in result) {
-      yield result;
-      continue;
+  const owners = [...new Set([options.owner].flat().map((owner) => owner.toLowerCase()))];
+  if (owners.length === 0) throw new TypeError("owner is required");
+  const fresh = (): Position => ({ sk: String((options.since ?? new Date()).getTime()), seen: [] });
+  const after = options.after === undefined ? fresh() : decodeCursor(options.after);
+  let cursor: Cursor = forOwners(after, owners, fresh);
+  // Stops every owner's poll (and its sleep) once the consumer is done or one poll throws.
+  const stop = new AbortController();
+  const signal = AbortSignal.any([stop.signal, ...(options.signal ? [options.signal] : [])]);
+  const polls = owners.map((owner) =>
+    tagged(
+      owner,
+      pollPages({ ...options, owner, signal, after: (cursor.owners?.[owner] ?? cursor).sk }),
+    ),
+  );
+  try {
+    for await (const result of merge(polls)) {
+      if ("error" in result) {
+        yield result;
+        continue;
+      }
+      const step = advance(cursor, result.page, result.owner);
+      cursor = step.next;
+      const events = step.fresh.filter(
+        (event: Envelope) => filters.length === 0 || filters.some((f) => matches(event, f)),
+      );
+      yield { owner: result.owner, events, cursor: encodeCursor(cursor), gap: result.page.gap };
     }
-    const step = advance(cursor, result.page);
-    cursor = step.next;
-    const events = step.fresh.filter(
-      (event: Envelope) => filters.length === 0 || filters.some((f) => matches(event, f)),
-    );
-    yield { events, cursor: encodeCursor(cursor), gap: result.page.gap };
+  } finally {
+    stop.abort();
   }
 }

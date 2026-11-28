@@ -23,14 +23,19 @@ export class OutOfScopeError extends AuthError {
   }
 }
 
-/** Any other non-2xx response from the relay. Retryable, except that 400 means a bad request. */
+/** Any other non-2xx response from the relay: transient, so the pollers retry it. */
 export class RelayError extends Error {
   override name = "RelayError";
   readonly status: number;
-  constructor(status: number) {
-    super(`relay returned HTTP ${status}`);
+  constructor(status: number, message = `relay returned HTTP ${status}`) {
+    super(message);
     this.status = status;
   }
+}
+
+/** HTTP 400: a missing `owner`, or a bad `after` or `filters`. Retrying cannot help, so the pollers throw it. */
+export class BadRequestError extends RelayError {
+  override name = "BadRequestError";
 }
 
 /** No relay URL and token in the environment or the saved `hook-harness login`. */

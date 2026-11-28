@@ -6,7 +6,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { writeClient } from "../client.ts";
 import { ev, page } from "../test-helpers/watch.ts";
 import { resolveClient } from "./config.ts";
-import { NotLoggedInError, OutOfScopeError, RelayError, UnauthorizedError } from "./errors.ts";
+import {
+  BadRequestError,
+  NotLoggedInError,
+  OutOfScopeError,
+  RelayError,
+  UnauthorizedError,
+} from "./errors.ts";
 import { fetchEventsPage } from "./events.ts";
 
 /** A fetch that answers `response` and records each request URL. */
@@ -102,6 +108,21 @@ describe("fetchEventsPage", () => {
       status: 503,
       message: "relay returned HTTP 503",
     });
+  });
+});
+
+describe("fetchEventsPage 400", () => {
+  it("throws BadRequestError with the relay's reason when it gives one", async () => {
+    const named = relay(() => Response.json({ error: "invalid after" }, { status: 400 }));
+    await expect(fetchEventsPage({ ...conn, fetch: named.fetch })).rejects.toMatchObject({
+      constructor: BadRequestError,
+      status: 400,
+      message: "relay rejected the request (HTTP 400): invalid after",
+    });
+    const bare = relay(() => new Response("", { status: 400 }));
+    const error = await fetchEventsPage({ ...conn, fetch: bare.fetch }).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(RelayError);
+    expect(error).toMatchObject({ message: "relay rejected the request (HTTP 400)" });
   });
 });
 

@@ -4,6 +4,7 @@ export type { Envelope, EventFilter, EventsPage } from "@hook-harness/protocol";
 export { resolveClient, type ClientConfig } from "./config.ts";
 export {
   AuthError,
+  BadRequestError,
   NotLoggedInError,
   OutOfScopeError,
   RelayError,

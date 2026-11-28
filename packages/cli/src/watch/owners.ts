@@ -1,41 +1,8 @@
 import type { ClientConfig } from "../client/config.ts";
+import { merge } from "../client/merge.ts";
 import type { Ctx } from "../types.ts";
 import { relaySource, type Query } from "./source.ts";
 import type { EventSource, PollResult } from "./types.ts";
-
-type Settled =
-  | { index: number; result: IteratorResult<PollResult> }
-  | { index: number; error: unknown };
-
-/**
- * Interleaves several polls as their results arrive. A poll is resumed only after the consumer
- * has handled its last result, so its `delay()` sees the consumer's latest state. With `once`,
- * each poll gives only its first result.
- */
-async function* merge(
-  polls: AsyncGenerator<PollResult>[],
-  once: boolean,
-): AsyncGenerator<PollResult> {
-  const pending = new Map<number, Promise<Settled>>();
-  const pull = (index: number): void => {
-    pending.set(
-      index,
-      polls[index]!.next().then(
-        (result) => ({ index, result }),
-        (error: unknown) => ({ index, error }),
-      ),
-    );
-  };
-  polls.forEach((_, index) => pull(index));
-  while (pending.size > 0) {
-    const settled = await Promise.race(pending.values());
-    pending.delete(settled.index);
-    if ("error" in settled) throw settled.error;
-    if (settled.result.done) continue;
-    yield settled.result.value;
-    if (!once) pull(settled.index);
-  }
-}
 
 async function* tagged(
   owner: string,

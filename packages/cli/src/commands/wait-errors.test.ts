@@ -37,6 +37,14 @@ describe("wait failures", () => {
     }
   });
 
+  it("fails on a 400 with the relay's reason instead of retrying until --timeout", async () => {
+    const h = await watchHarness([Response.json({ error: "invalid after" }, { status: 400 })]);
+    await expect(wait(["--owner", "o"], h.ctx)).rejects.toThrow(
+      "relay rejected the request (HTTP 400): invalid after",
+    );
+    expect(h.calls.urls).toHaveLength(1);
+  });
+
   it("names the owner and the token's scopes when the owner is out of scope", async () => {
     const body = { error: "forbidden", owner: "o", scopes: ["a/*", "b/c"] };
     const h = await watchHarness([Response.json(body, { status: 403 })]);

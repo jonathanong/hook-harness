@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { ev, page } from "../test-helpers/watch.ts";
 import { decodeCursor, encodeCursor } from "../watch/cursor.ts";
-import { UnauthorizedError } from "./errors.ts";
+import { BadRequestError, UnauthorizedError } from "./errors.ts";
 import { pollEvents, pollPages, type EventsBatch } from "./poll.ts";
 
 type Answer = () => Response | Error;
@@ -77,9 +77,74 @@ describe("pollEvents", () => {
     sleeps.length = 0;
     const r = relay([() => new TypeError("fetch failed"), () => new Response("", { status: 401 })]);
     const source = pollEvents({ ...conn, fetch: r.fetch, intervalMs: 100 });
-    expect((await source.next()).value).toEqual({ error: new TypeError("fetch failed") });
+    expect((await source.next()).value).toEqual({
+      error: new TypeError("fetch failed"),
+      owner: "o",
+    });
     await expect(source.next()).rejects.toBeInstanceOf(UnauthorizedError);
     expect(sleeps).toEqual([200]);
+  });
+});
+
+describe("pollEvents with several owners", () => {
+  /** Sleeps until the poll stops, so each owner polls once. */
+  const parked = (_ms: number, signal: AbortSignal): Promise<void> =>
+    new Promise((resolve) => signal.addEventListener("abort", () => resolve()));
+  /** A fetch that answers each owner from its own pages (the last repeats). */
+  function owners(pages: Record<string, Array<ReturnType<typeof page>>>) {
+    const calls: string[] = [];
+    const counts: Record<string, number> = {};
+    const fetch = vi.fn(async (input: string | URL | Request) => {
+      const url = new URL(String(input));
+      const owner = url.searchParams.get("owner")!;
+      calls.push(`${owner}@${url.searchParams.get("after")}`);
+      counts[owner] = (counts[owner] ?? 0) + 1;
+      const own = pages[owner]!;
+      return Response.json(own[Math.min(counts[owner] - 1, own.length - 1)]);
+    });
+    return { calls, fetch: fetch as unknown as typeof globalThis.fetch };
+  }
+
+  it("polls each owner from its own position and yields one cursor over all", async () => {
+    const r = owners({
+      a: [page([ev("a1", 1)], "a-c1")],
+      b: [{ ...page([ev("b1", 2)], "b-c1"), gap: true }],
+    });
+    const after = encodeCursor({
+      sk: "1",
+      seen: [],
+      owners: { a: { sk: "10", seen: [] }, b: { sk: "20", seen: [] } },
+    });
+    const batches = await take(
+      pollEvents({ ...conn, owner: ["A", "b", "a"], fetch: r.fetch, sleep: parked, after }),
+      2,
+    );
+    expect(r.calls.toSorted()).toEqual(["a@10", "b@20"]);
+    const byOwner = Object.fromEntries(batches.map((b) => [b.owner, b]));
+    expect(byOwner["a"]).toMatchObject({ events: [{ id: "a1" }], gap: false });
+    expect(byOwner["b"]).toMatchObject({ events: [{ id: "b1" }], gap: true });
+    const last = batches[1] as Extract<EventsBatch, { cursor: string }>;
+    expect(decodeCursor(last.cursor).owners).toEqual({
+      a: { sk: "a-c1", seen: ["a1"] },
+      b: { sk: "b-c1", seen: ["b1"] },
+    });
+  });
+
+  it("starts every owner from since without a cursor, and needs at least one owner", async () => {
+    const r = owners({ a: [page([])], b: [page([])] });
+    await take(
+      pollEvents({ ...conn, owner: ["a", "b"], fetch: r.fetch, sleep: parked, since: new Date(9) }),
+      2,
+    );
+    expect(r.calls.toSorted()).toEqual(["a@9", "b@9"]);
+    await expect(pollEvents({ ...conn, owner: [] }).next()).rejects.toThrow("owner is required");
+  });
+
+  it("throws a 400 instead of retrying it, stopping the other owners", async () => {
+    const r = relay([() => Response.json({ error: "invalid filters" }, { status: 400 })]);
+    const signal = new AbortController().signal;
+    const source = pollEvents({ ...conn, owner: ["a", "b"], fetch: r.fetch, signal });
+    await expect(source.next()).rejects.toBeInstanceOf(BadRequestError);
   });
 });
 

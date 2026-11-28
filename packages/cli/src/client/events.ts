@@ -1,6 +1,6 @@
 import { preset, type EventFilter, type EventsPage } from "@hook-harness/protocol";
 
-import { OutOfScopeError, RelayError, UnauthorizedError } from "./errors.ts";
+import { BadRequestError, OutOfScopeError, RelayError, UnauthorizedError } from "./errors.ts";
 
 /** Where the relay is and how to reach it. */
 export interface Connection {
@@ -77,6 +77,13 @@ async function outOfScope(response: Response, owner: string): Promise<OutOfScope
   return new OutOfScopeError(message, owner, scopes);
 }
 
+/** The relay names what it rejected (`invalid after`, `invalid filters`, ...) in `error`. */
+async function badRequest(response: Response): Promise<BadRequestError> {
+  const body = (await response.json().catch(() => undefined)) as { error?: unknown } | undefined;
+  const reason = typeof body?.error === "string" ? `: ${body.error}` : "";
+  return new BadRequestError(400, `relay rejected the request (HTTP 400)${reason}`);
+}
+
 /**
  * One `GET /events` request. Returns the page exactly as the relay sent it: the relay replays
  * the last 60 seconds before `after`, so events can repeat across pages, and filters too many or
@@ -100,6 +107,7 @@ export async function fetchEventsPage(options: FetchEventsPageOptions): Promise<
     throw new UnauthorizedError("relay rejected the token (HTTP 401); run hook-harness login");
   }
   if (response.status === 403) throw await outOfScope(response, options.owner);
+  if (response.status === 400) throw await badRequest(response);
   if (!response.ok) throw new RelayError(response.status);
   return (await response.json()) as EventsPage;
 }
