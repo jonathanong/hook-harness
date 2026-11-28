@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { PutCommand } from "@aws-sdk/lib-dynamodb";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { clientPath } from "../client.ts";
+import { clientPath } from "../client/config.ts";
 import { cfnMock, ddbMock, harness, stubStack } from "../test-helpers/ctx.ts";
 import { withSlash } from "./common.ts";
 import { parseRepos, token } from "./token.ts";

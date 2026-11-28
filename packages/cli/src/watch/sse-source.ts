@@ -3,7 +3,8 @@ import type { Envelope, EventFilter } from "@hook-harness/protocol";
 import type { Ctx } from "../types.ts";
 import { decodeCursor, encodeCursor } from "./cursor.ts";
 import { createSseParser, type SseItem } from "./sse-parser.ts";
-import { AuthError, backoffMs } from "./source.ts";
+import { AuthError } from "../client/errors.ts";
+import { backoffMs } from "../client/events.ts";
 import type { EventSource, PollResult } from "./types.ts";
 
 export interface SseOptions {

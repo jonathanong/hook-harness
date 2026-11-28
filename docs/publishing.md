@@ -2,7 +2,10 @@
 
 The CLI (`packages/cli`) is published as `hook-harness`. It ships one bundled ESM file
 (`dist/bin.mjs`, protocol and AWS SDK inlined) plus the relay assets `deploy`/`update` upload
-(`dist/relay/index.mjs`, `dist/relay/template.yaml`). Releases are published by
+(`dist/relay/index.mjs`, `dist/relay/template.yaml`). It also ships the `hook-harness/client`
+export: `dist/client.mjs` with declarations under `dist/types/`, which `build.mjs` rewrites so they
+do not refer to the private `@hook-harness/protocol`. Its API, documented in the README, is semver
+stable: breaking it needs a `major` bump. Releases are published by
 `.github/workflows/publish.yml` using npm trusted publishing (OIDC, provenance, no `NPM_TOKEN`).
 
 npm only lets you attach a trusted publisher to a package that exists, or to a _pending_ publisher

@@ -29,6 +29,12 @@
     "dist"
   ],
   "type": "module",
+  "exports": {
+    "./client": {
+      "types": "./dist/types/cli/src/client/index.d.ts",
+      "default": "./dist/client.mjs"
+    }
+  },
   "publishConfig": {
     "access": "public",
     "provenance": true
