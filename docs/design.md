@@ -180,7 +180,7 @@ pnpm workspace, TypeScript, Node 24 LTS (`nodejs24.x`, `@types/node@24`). Source
 
 - `packages/protocol`: envelope, filters and matching.
 - `packages/relay`: Lambda handler, normalizers, auth, payload packing, and `template.yaml`. It's bundled with esbuild.
-- `packages/cli`: the `hook-harness` CLI (operations, `wait`/`tail`, `serve`, `mcp`).
+- `packages/cli`: the `hook-harness` CLI (operations, `wait`/`tail`, `serve`, `mcp`), plus the `hook-harness/client` export (`src/client/`) that `wait`/`tail` poll the relay through.
 
 Repo setup:
 

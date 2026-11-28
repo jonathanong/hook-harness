@@ -10,4 +10,12 @@ describe("package.json", () => {
       expect(pkg.files.some((dir) => target.startsWith(`${dir}/`))).toBe(true);
     }
   });
+
+  it("uses export paths Node resolves, inside the published files", () => {
+    // Unlike bin, exports targets must start with "./".
+    for (const target of Object.values(pkg.exports).flatMap((entry) => Object.values(entry))) {
+      expect(target).toMatch(/^\.\//);
+      expect(pkg.files.some((dir) => target.startsWith(`./${dir}/`))).toBe(true);
+    }
+  });
 });

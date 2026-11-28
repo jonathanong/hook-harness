@@ -1,7 +1,7 @@
 import { matches, type Envelope, type EventFilter } from "@hook-harness/protocol";
 
 import { list, str, UsageError, type Values } from "../args.ts";
-import { resolveClient } from "../client.ts";
+import { resolveClient } from "../client/config.ts";
 import { parseDuration, parseSince } from "../duration.ts";
 import type { Ctx } from "../types.ts";
 import { decodeCursor, encodeCursor, forOwners, type Cursor } from "./cursor.ts";

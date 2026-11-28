@@ -1,5 +1,6 @@
 import pkg from "../package.json" with { type: "json" };
 import { UsageError } from "./args.ts";
+import { NotLoggedInError } from "./client/errors.ts";
 import { deploy, update } from "./commands/deploy.ts";
 import { login } from "./commands/login.ts";
 import { mcp } from "./mcp/command.ts";
@@ -66,7 +67,7 @@ export async function main(
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     ctx.err(`error: ${message}`);
-    return error instanceof UsageError ? 2 : 1;
+    return error instanceof UsageError || error instanceof NotLoggedInError ? 2 : 1;
   }
 }
 

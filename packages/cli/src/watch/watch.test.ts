@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { defaultCtx } from "../ctx.ts";
 import { parseDuration, parseSince } from "../duration.ts";
-import { resolveClient } from "../client.ts";
+import { resolveClient } from "../client/config.ts";
 import { ev, page, watchHarness } from "../test-helpers/watch.ts";
 import { advance, decodeCursor, encodeCursor, forOwners } from "./cursor.ts";
 import { relaySource } from "./source.ts";

@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -61,4 +61,52 @@ describe("build output", () => {
     const { stdout } = await run("node", [join(out, "bin.mjs"), "status", "--help"]);
     expect(stdout).toContain("hook-harness status");
   });
+
+  it("ships hook-harness/client with self-contained declarations", async () => {
+    const types = join(out, "types");
+    for (const entry of await readdir(types, { recursive: true })) {
+      if (!entry.endsWith(".d.ts")) continue;
+      const text = await readFile(join(types, entry), "utf8");
+      expect(text, entry).not.toContain("@hook-harness/");
+      expect(text, entry).not.toMatch(/from "[^"]*\.ts"/);
+    }
+    const client = await readFile(join(out, "client.mjs"), "utf8");
+    expect(client).not.toMatch(/@aws-sdk|@modelcontextprotocol|^#!/m);
+  });
+
+  it("imports and typechecks hook-harness/client from an installed package", async () => {
+    const app = await mkdtemp(join(tmpdir(), "hh-consumer-"));
+    const pkgDir = join(app, "node_modules", "hook-harness");
+    await mkdir(pkgDir, { recursive: true });
+    await cp(join(cliDir, "package.json"), join(pkgDir, "package.json"));
+    await cp(out, join(pkgDir, "dist"), { recursive: true });
+    await writeFile(join(app, "package.json"), '{"type":"module"}');
+    await writeFile(
+      join(app, "use.ts"),
+      [
+        'import { fetchEventsPage, pollEvents, OutOfScopeError } from "hook-harness/client";',
+        'import type { Envelope, EventFilter, EventsPage } from "hook-harness/client";',
+        'const filter: EventFilter = { event: "push" };',
+        "const page: Promise<EventsPage> = fetchEventsPage({",
+        '  url: "u", token: "t", owner: "o", filters: [filter],',
+        "});",
+        "const ids = async (): Promise<string[]> => (await page).events.map((e: Envelope) => e.id);",
+        'const batches = pollEvents({ url: "u", token: "t", owner: "o", on: ["ejection"] });',
+        "export { batches, ids, OutOfScopeError };",
+      ].join("\n"),
+    );
+    const tsc = join(root, "node_modules/.bin/tsc");
+    const flags = ["--noEmit", "--strict", "--module", "nodenext", "--types", "node"];
+    await run(tsc, [...flags, "--typeRoots", join(root, "node_modules/@types"), "use.ts"], {
+      cwd: app,
+    });
+    const script =
+      'import("hook-harness/client").then((m) => console.log(Object.keys(m).sort().join()))';
+    const { stdout } = await run("node", ["--input-type=module", "-e", script], { cwd: app });
+    expect(stdout.trim()).toBe(
+      "AuthError,NotLoggedInError,OutOfScopeError,RelayError,UnauthorizedError," +
+        "fetchEventsPage,pollEvents,pollPages,resolveClient",
+    );
+    await rm(app, { recursive: true });
+  }, 60_000);
 });

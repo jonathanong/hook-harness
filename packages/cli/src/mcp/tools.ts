@@ -6,7 +6,7 @@ import type {
   ServerRequest,
 } from "@modelcontextprotocol/sdk/types.js";
 
-import { resolveClient } from "../client.ts";
+import { resolveClient } from "../client/config.ts";
 import type { Ctx } from "../types.ts";
 import { collect } from "../watch/collect.ts";
 import { advance, encodeCursor } from "../watch/cursor.ts";

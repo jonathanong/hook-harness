@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { lastLine, page, watchHarness, ev } from "../test-helpers/watch.ts";
-import { relayFilters } from "../watch/source.ts";
+import { relayFilters } from "../client/events.ts";
 import { tail } from "./tail.ts";
 import { wait } from "./wait.ts";
 

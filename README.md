@@ -80,6 +80,37 @@ args = ["-y", "hook-harness", "mcp"]
 
 The server is stateless: pass the returned `cursor` back as `after` (or pass `cursor_name` to use a local cursor file). `owner` accepts a comma list; `gap: true` means sweep the GitHub API to catch up. Keep `timeout_seconds` under your client's tool-call cap (e.g. `MCP_TOOL_TIMEOUT` in Claude Code).
 
+## Client API: `hook-harness/client`
+
+To read events in-process instead of starting the CLI, add `hook-harness` as a dependency and import `hook-harness/client` (ESM, Node 24+; its types need `@types/node`). This export is a stable contract: a breaking change to it ships as a major version.
+
+```ts
+import { pollEvents, resolveClient } from "hook-harness/client";
+
+const client = await resolveClient(); // saved `hook-harness login`, or HOOK_HARNESS_URL / HOOK_HARNESS_TOKEN
+for await (const batch of pollEvents({ ...client, owner: "acme", on: ["ejection"], signal })) {
+  if ("error" in batch) continue; // transient: already retried with backoff
+  handle(batch.events);
+  save(batch.cursor); // pass back as `after` to resume
+}
+```
+
+| Export                     | What it does                                                                                                                                                                                                                                                                                                                                                              |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `resolveClient(env?)`      | Returns `{url, token}` from `client.json` (`hook-harness login`), with `HOOK_HARNESS_URL` / `HOOK_HARNESS_TOKEN` overriding each field. Throws `NotLoggedInError` when either is missing.                                                                                                                                                                                 |
+| `fetchEventsPage(options)` | One `GET /events` request; returns the `EventsPage` (`events`, `cursor`, `more`, `gap`) as the relay sent it. Pages repeat events from the 60 seconds before `after`, and filters past 50 entries or 4000 characters are not sent, so filter and dedupe yourself or use `pollEvents`. `after` wins over `since`; with neither, reads from the start of the 24h retention. |
+| `pollEvents(options)`      | Long-polls until `signal` aborts. Yields `{events, cursor, gap}` once per poll (empty or not): each event once, only events matching `filters`/`on`. `cursor` uses the same format as `hook-harness wait`'s, so either can resume the other. Starts at `after`, else `since`, else now.                                                                                   |
+| `pollPages(options)`       | The raw page loop under `pollEvents`: yields `{page}` per poll, follows a cut-short page at once.                                                                                                                                                                                                                                                                         |
+
+Options: `url`, `token`, `owner` (one per call), and optionally `repos`, `filters` (`EventFilter[]`), `on` (preset names as `--on` takes them), `payload` (default true), `after`, `since` (`Date`), `limit`, `signal`, `fetch`, and for the pollers `intervalMs` (default 5000) and `delay`. An unknown preset throws `TypeError`.
+
+HTTP errors carry `status`:
+
+- `UnauthorizedError` (401) and `OutOfScopeError` (403, with `owner` and the token's `scopes` when the relay names them) extend `AuthError`. Retrying cannot help, so the pollers throw them.
+- `RelayError` is any other HTTP status. It and network errors (`TypeError`) are transient: the pollers yield `{error}` and retry with exponential backoff capped at 5 minutes. A 400 means a bad `after` or filter and will not clear on its own.
+
+`Envelope`, `EventFilter` and `EventsPage` are exported as types.
+
 ## Install
 
 Requires Node 24+.

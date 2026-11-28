@@ -1,4 +1,4 @@
-import type { ClientConfig } from "../client.ts";
+import type { ClientConfig } from "../client/config.ts";
 import type { Ctx } from "../types.ts";
 import { relaySource, type Query } from "./source.ts";
 import type { EventSource, PollResult } from "./types.ts";
